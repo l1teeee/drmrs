@@ -60,7 +60,7 @@ export interface UnlinkedContact {
 
 export interface AdminMessageStore {
   enqueue(
-    adminId: string,
+    adminId: string | null,
     registrationId: string,
     text: string,
     templateKey: TemplateKey | null,

@@ -21,7 +21,7 @@ const mutableStatuses = new Set(["FAILED", "WAITING_CONTACT", "WAITING_WINDOW", 
 
 async function insertAudit(
   client: PoolClient,
-  adminId: string,
+  adminId: string | null,
   registrationId: string,
   action: string,
   metadata: Record<string, unknown> = {},
@@ -75,7 +75,7 @@ async function mutatePendingMessage(
 
 export class PostgresAdminMessageRepository implements AdminMessageStore {
   enqueue(
-    adminId: string,
+    adminId: string | null,
     registrationId: string,
     text: string,
     templateKey: TemplateKey | null,
@@ -106,7 +106,7 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
         [registrationId, registration.messaging_contact_id, status, text, adminId, templateKey],
       );
       await insertAudit(client, adminId, registrationId, "INSTAGRAM_MESSAGE_QUEUED", {
-        template: templateKey, status,
+        template: templateKey, status, ...(adminId === null ? { via: "auto" } : {}),
       });
       return { kind: "queued", status };
     });

@@ -9,6 +9,7 @@ export interface SubmitRegistrationDependencies {
   store: RegistrationStore;
   codes: ExpedienteCodes;
   instagramLinkFor: (code: string) => Promise<string | null>;
+  queueWelcome: (registrationId: string) => Promise<void>;
   botVerifier: BotVerifier;
   checkIp: RateLimitCheck;
   checkWhatsapp: RateLimitCheck;
@@ -82,6 +83,8 @@ export async function submitRegistration(
       instagramLink: outcome.igLinkCode !== null ? await deps.instagramLinkFor(outcome.igLinkCode) : null,
     };
   }
+
+  await deps.queueWelcome(outcome.id);
 
   return {
     kind: "registered",
