@@ -70,6 +70,7 @@ const serverEnvSchema = z
     META_WEBHOOK_VERIFY_TOKEN: optionalString.pipe(z.string().min(16).optional()),
     INSTAGRAM_TOKEN_ENCRYPTION_KEY: optionalTokenKey,
     INSTAGRAM_BUSINESS_USERNAME: optionalString.pipe(z.string().regex(/^[a-z0-9._]{1,30}$/).optional()),
+    INSTAGRAM_ALLOW_ANY_ACCOUNT: z.string().optional().transform((value) => value === "true"),
     META_GRAPH_API_BASE_URL: z.preprocess(
       (value) => (value === "" ? undefined : value),
       z.url().refine(
@@ -105,7 +106,6 @@ const serverEnvSchema = z
         "INSTAGRAM_LOGIN_CONFIG_ID",
         "META_WEBHOOK_VERIFY_TOKEN",
         "INSTAGRAM_TOKEN_ENCRYPTION_KEY",
-        "INSTAGRAM_BUSINESS_USERNAME",
       ] as const) {
         if (!value[field]) {
           context.addIssue({
@@ -114,6 +114,13 @@ const serverEnvSchema = z
             message: "is required when MESSAGING_MODE is instagram",
           });
         }
+      }
+      if (!value.INSTAGRAM_ALLOW_ANY_ACCOUNT && !value.INSTAGRAM_BUSINESS_USERNAME) {
+        context.addIssue({
+          code: "custom",
+          path: ["INSTAGRAM_BUSINESS_USERNAME"],
+          message: "is required when MESSAGING_MODE is instagram and INSTAGRAM_ALLOW_ANY_ACCOUNT is not true",
+        });
       }
       if (protectedEnvironment && (!value.CRON_SECRET || value.CRON_SECRET.length < 32)) {
         context.addIssue({

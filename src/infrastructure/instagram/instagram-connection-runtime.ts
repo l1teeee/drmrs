@@ -42,9 +42,16 @@ export function instagramAuthorizationUrl(state: string): string {
 }
 
 export function completeConfiguredInstagramConnection(code: string, adminId: string) {
+  const environment = getEnv();
   return completeUnifiedInstagramConnection(
     { client: unifiedLoginClient(), repository: postgresInstagramConnectionRepository },
-    { code, adminId, requiredUsername: getEnv().INSTAGRAM_BUSINESS_USERNAME! },
+    {
+      code,
+      adminId,
+      requiredUsername: environment.INSTAGRAM_ALLOW_ANY_ACCOUNT
+        ? null
+        : (environment.INSTAGRAM_BUSINESS_USERNAME ?? null),
+    },
   );
 }
 

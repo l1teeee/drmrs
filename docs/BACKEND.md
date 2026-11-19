@@ -57,7 +57,8 @@ npm run db:stop
 | `INSTAGRAM_LOGIN_CONFIG_ID` | ID de configuración de Facebook Login for Business | Vacío | Obligatorio si el modo es `instagram` |
 | `META_WEBHOOK_VERIFY_TOKEN` | Token para la verificación inicial del webhook de Meta | Vacío | Token de al menos 16 caracteres. Obligatorio si el modo es `instagram` |
 | `INSTAGRAM_TOKEN_ENCRYPTION_KEY` | Clave AES-256-GCM para cifrar el token de Instagram en base de datos | Vacío | 32 bytes en base64. Obligatorio si el modo es `instagram` |
-| `INSTAGRAM_BUSINESS_USERNAME` | Nombre de usuario profesional de la cuenta de Instagram | `drmrs.archive` | `drmrs.archive` en minúsculas. Obligatorio si el modo es `instagram` |
+| `INSTAGRAM_BUSINESS_USERNAME` | Nombre de usuario profesional de la cuenta de Instagram | `drmrs.archive` | `drmrs.archive` en minúsculas. Obligatorio si el modo es `instagram` y `INSTAGRAM_ALLOW_ANY_ACCOUNT` no es `true` |
+| `INSTAGRAM_ALLOW_ANY_ACCOUNT` | `true` permite conectar cualquier cuenta profesional de Instagram (se debe compartir exactamente una en el diálogo de Meta); vacío limita la conexión a `INSTAGRAM_BUSINESS_USERNAME` | Vacío | `true` o vacío. Con `true`, el enlace `ig.me` usa el usuario de la cuenta conectada si `INSTAGRAM_BUSINESS_USERNAME` está vacío |
 | `META_GRAPH_API_BASE_URL` | URL base de Graph API terminada en versión | `https://graph.facebook.com/v27.0` | `https://graph.facebook.com/v27.0` |
 | `CRON_SECRET` | Clave secreta para autorizar la ejecución del cron de mensajes | Vacío | Mínimo 32 caracteres. Obligatorio si el modo es `instagram` |
 
@@ -137,7 +138,7 @@ La integración con Instagram utiliza la API de Meta y requiere interacción pre
   5. Campos de suscripción del webhook: `messages`, `messaging_seen`, `messaging_referral`, `message_reactions`, `messaging_postbacks`.
   6. URI de redirección OAuth registrada: `https://<dominio>/api/instagram/callback`.
   7. Proceso de App Review ante Meta para permitir el uso público fuera de usuarios con rol de prueba.
-- Variables de entorno requeridas cuando `MESSAGING_MODE=instagram`: `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_LOGIN_CONFIG_ID`, `META_WEBHOOK_VERIFY_TOKEN`, `INSTAGRAM_TOKEN_ENCRYPTION_KEY`, `INSTAGRAM_BUSINESS_USERNAME` y `CRON_SECRET`.
+- Variables de entorno requeridas cuando `MESSAGING_MODE=instagram`: `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_LOGIN_CONFIG_ID`, `META_WEBHOOK_VERIFY_TOKEN`, `INSTAGRAM_TOKEN_ENCRYPTION_KEY` y `CRON_SECRET`, más `INSTAGRAM_BUSINESS_USERNAME` salvo que `INSTAGRAM_ALLOW_ANY_ACCOUNT=true` (en ese caso se acepta cualquier cuenta profesional y el enlace `ig.me` usa el usuario de la cuenta conectada).
 - Modo de contingencia (Sin enviar): los mensajes que no pueden entregarse automáticamente o cuya ventana de 24 horas expiró se listan en el panel para copia manual y contacto mediante `ig.me/m/<usuario>`.
 - Cron de despacho: endpoint programado `/api/cron/messages` protegido mediante cabecera `Authorization: Bearer <CRON_SECRET>`, ejecutado diariamente a las 14:00 UTC según `vercel.json` para procesar la cola de salida de mensajes pendientes.
 

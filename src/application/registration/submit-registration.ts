@@ -8,7 +8,7 @@ import type { ExpedienteCodes, RegistrationStore } from "./registration-store";
 export interface SubmitRegistrationDependencies {
   store: RegistrationStore;
   codes: ExpedienteCodes;
-  instagramLinkFor: (code: string) => string | null;
+  instagramLinkFor: (code: string) => Promise<string | null>;
   botVerifier: BotVerifier;
   checkIp: RateLimitCheck;
   checkWhatsapp: RateLimitCheck;
@@ -79,7 +79,7 @@ export async function submitRegistration(
         outcome.registrationNumber,
         deps.codes.codeFor(outcome.id, outcome.linkVersion),
       ),
-      instagramLink: outcome.igLinkCode !== null ? deps.instagramLinkFor(outcome.igLinkCode) : null,
+      instagramLink: outcome.igLinkCode !== null ? await deps.instagramLinkFor(outcome.igLinkCode) : null,
     };
   }
 
@@ -90,6 +90,6 @@ export async function submitRegistration(
       outcome.registrationNumber,
       deps.codes.codeFor(outcome.id, outcome.linkVersion),
     ),
-    instagramLink: outcome.igLinkCode !== null ? deps.instagramLinkFor(outcome.igLinkCode) : null,
+    instagramLink: outcome.igLinkCode !== null ? await deps.instagramLinkFor(outcome.igLinkCode) : null,
   };
 }

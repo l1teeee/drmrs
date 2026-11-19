@@ -4,12 +4,28 @@ import type { SubmitRegistrationDependencies } from "@/application/registration/
 import { createBotVerifier } from "../bot-protection/turnstile-verifier";
 import { getEnv } from "../config/env";
 import { expedienteCodes } from "../crypto/expediente-code";
+import { postgresInstagramConnectionRepository } from "../db/repositories/postgres-instagram-connection-repository";
 import { postgresRegistrationRepository } from "../db/repositories/postgres-registration-repository";
+import { log, safeErrorCode } from "../observability/logger";
 import { consume, RATE_LIMITS } from "../rate-limit/postgres-rate-limiter";
 
-function instagramLinkFor(code: string): string | null {
-  const { MESSAGING_MODE: mode, INSTAGRAM_BUSINESS_USERNAME: username } = getEnv();
-  if (!username || (mode !== "instagram" && mode !== "log")) {
+async function connectedInstagramUsername(): Promise<string | null> {
+  try {
+    const connection = await postgresInstagramConnectionRepository.find();
+    return connection?.username ?? null;
+  } catch (error) {
+    log("error", "instagram_link_username_failed", { code: safeErrorCode(error) });
+    return null;
+  }
+}
+
+async function instagramLinkFor(code: string): Promise<string | null> {
+  const { MESSAGING_MODE: mode, INSTAGRAM_BUSINESS_USERNAME: configuredUsername } = getEnv();
+  if (mode !== "instagram" && mode !== "log") {
+    return null;
+  }
+  const username = configuredUsername ?? (await connectedInstagramUsername());
+  if (!username) {
     return null;
   }
   return `https://ig.me/m/${username}?ref=${code}`;
