@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.sql text eol=lf
+*.jpg -text
+*.jpeg -text
+*.png -text
+*.webp -text
+*.mp4 -text
+*.ttf -text
+*.woff2 -text
+*.svg -text

@@ -1,0 +1,65 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+/.local/
+.DS_Store
+*.pem
+# fuentes de arte y textura original (licencia de terceros, no se redistribuyen)
+/arte/
+/Texturelabs_Paper_361XL.jpg
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+.agents/
+!.env.example
+
+# secretos, certificados y respaldos
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+*.dump
+*.bak
+*.sql.gz
+/backups/
+
+# herramientas de agentes
+.claude/
+.codex/
+.gemini/
+.orca/

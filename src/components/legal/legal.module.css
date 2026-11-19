@@ -1,0 +1,56 @@
+/* Typography for the legal text rendered inside PaginaLegal. */
+.contenido h2 {
+  margin-top: 40px;
+  margin-bottom: 10px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.contenido h2:first-child {
+  margin-top: 0;
+}
+
+.contenido p,
+.contenido li {
+  font-size: 15px;
+  line-height: 1.65;
+  color: rgb(31 31 34 / 0.78);
+}
+
+.contenido p + p,
+.contenido ul + p,
+.contenido p + ul {
+  margin-top: 12px;
+}
+
+.contenido ul {
+  display: grid;
+  gap: 6px;
+}
+
+.contenido li {
+  position: relative;
+  padding-left: 18px;
+}
+
+.contenido li::before {
+  content: "—";
+  position: absolute;
+  left: 0;
+  color: rgb(31 31 34 / 0.4);
+}
+
+.contenido a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.contenido .nota {
+  margin-top: 40px;
+  border-left: 1px solid rgb(31 31 34 / 0.3);
+  padding-left: 16px;
+  font-family: var(--font-maquina), "Courier New", monospace;
+  font-size: 13px;
+}
