@@ -43,5 +43,6 @@ export interface AdminRegistroStore {
   listTemplates(): Promise<MessageTemplate[]>;
   updateTemplate(adminId: string, key: TemplateKey, body: string): Promise<void>;
   recordExport(adminId: string, count: number): Promise<void>;
-  listAudit(before: number | null, limit: number): Promise<AuditEntry[]>;
+  listAudit(offset: number, limit: number): Promise<AuditEntry[]>;
+  countAudit(): Promise<number>;
 }

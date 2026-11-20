@@ -9,6 +9,7 @@ import {
 } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { type ListFilters, listFiltersSchema } from "@/contracts/admin-registros";
+import { paginate } from "@/domain/pagination";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { PIECE_STATUSES, SIZES } from "@/domain/registration/registration";
 import { adminHref } from "@/infrastructure/admin/admin-path";
@@ -27,6 +28,8 @@ import {
   TITULO,
 } from "../../ui";
 import { estadoInstagram } from "../estado-instagram";
+import { Paginacion } from "../Paginacion";
+import { hrefPagina, parsePagina } from "../parametros-pagina";
 import { FilaRegistro, type FilaRegistroProps } from "./FilaRegistro";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -74,9 +77,17 @@ export default async function RegistrosPage({
   const resolvedParams = await searchParams;
   const filters = parseFilters(resolvedParams);
   const registros = await listRegistros(filters, adminRegistrosDependencies());
+  const pagina = paginate(registros, parsePagina(resolvedParams.pagina), 25);
+  const hrefDePagina = (n: number) =>
+    hrefPagina(
+      adminHref("/registros"),
+      { q: filters.q, estado: filters.estado, talla: filters.talla },
+      "pagina",
+      n,
+    );
   const messagesDeps = adminMessagesDependencies();
-  const windowStates = await listWindowStates(registros.map((row) => row.id), messagesDeps);
-  const activationTexts = await renderActivationTexts(registros, messagesDeps);
+  const windowStates = await listWindowStates(pagina.items.map((row) => row.id), messagesDeps);
+  const activationTexts = await renderActivationTexts(pagina.items, messagesDeps);
   const now = new Date();
   const hasFilters = Boolean(filters.q || filters.estado || filters.talla);
 
@@ -184,22 +195,31 @@ export default async function RegistrosPage({
             </div>
           )
         ) : (
-          <ul className={`border-t ${FILA}`}>
-            {registros.map((row) => (
-              <FilaRegistro
-                key={row.id}
-                id={row.id}
-                conversacionHref={adminHref("/registros/" + row.id)}
-                registrationNumber={row.registrationNumber}
-                fullName={row.fullName}
-                instagramHandle={row.instagramHandle}
-                size={row.size}
-                pieceStatus={row.pieceStatus}
-                expedienteUrl={row.expedienteUrl}
-                {...instagramProps(row.id, windowStates, activationTexts, now)}
-              />
-            ))}
-          </ul>
+          <div>
+            <ul className={`border-t ${FILA}`}>
+              {pagina.items.map((row) => (
+                <FilaRegistro
+                  key={row.id}
+                  id={row.id}
+                  conversacionHref={adminHref("/registros/" + row.id)}
+                  registrationNumber={row.registrationNumber}
+                  fullName={row.fullName}
+                  instagramHandle={row.instagramHandle}
+                  size={row.size}
+                  pieceStatus={row.pieceStatus}
+                  expedienteUrl={row.expedienteUrl}
+                  {...instagramProps(row.id, windowStates, activationTexts, now)}
+                />
+              ))}
+            </ul>
+            <Paginacion
+              pagina={pagina.page}
+              totalPaginas={pagina.totalPages}
+              total={pagina.total}
+              hrefAnterior={pagina.page > 1 ? hrefDePagina(pagina.page - 1) : null}
+              hrefSiguiente={pagina.page < pagina.totalPages ? hrefDePagina(pagina.page + 1) : null}
+            />
+          </div>
         )}
       </main>
     </TransicionPagina>

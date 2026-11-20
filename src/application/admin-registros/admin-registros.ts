@@ -6,6 +6,7 @@ import type {
   TemplateUpdateInput,
 } from "@/contracts/admin-registros";
 import { findUnknownVariables } from "@/domain/messaging/message-template";
+import { pageBounds, type Page } from "@/domain/pagination";
 import { expedientePath, formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 
@@ -136,11 +137,13 @@ export async function exportRegistros(
   return rows;
 }
 
-export async function listAuditPage(
-  before: number | null,
-  deps: AdminRegistrosDependencies,
-): Promise<AuditEntry[]> {
-  return deps.store.listAudit(before, 50);
+const AUDIT_PAGE_SIZE = 50;
+
+export async function listAuditPage(page: number, deps: AdminRegistrosDependencies): Promise<Page<AuditEntry>> {
+  const total = await deps.store.countAudit();
+  const bounds = pageBounds(total, page, AUDIT_PAGE_SIZE);
+  const items = await deps.store.listAudit(bounds.offset, AUDIT_PAGE_SIZE);
+  return { items, page: bounds.page, totalPages: bounds.totalPages, total };
 }
 
 export async function listMessageTemplates(deps: AdminRegistrosDependencies) {

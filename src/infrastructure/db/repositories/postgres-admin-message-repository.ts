@@ -227,7 +227,7 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
         WHERE m.direction = 'OUT'
           AND (m.status IN ('FAILED', 'WAITING_CONTACT', 'WAITING_WINDOW')
                OR (m.status = 'QUEUED' AND m.attempts > 0))
-        ORDER BY m.created_at DESC, m.id DESC LIMIT 200`,
+        ORDER BY m.created_at DESC, m.id DESC`,
     );
     return result.rows;
   }

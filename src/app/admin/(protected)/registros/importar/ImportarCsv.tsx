@@ -12,6 +12,7 @@ import {
   REGLA,
   TITULO,
 } from "@/app/admin/ui";
+import { paginate } from "@/domain/pagination";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 
 export interface ImportarCsvProps {
@@ -106,6 +107,7 @@ export function ImportarCsv({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PreviewData | null>(null);
+  const [pagina, setPagina] = useState(1);
   const [runSummary, setRunSummary] = useState<RunSummary | null>(null);
   const [dragging, setDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -138,6 +140,7 @@ export function ImportarCsv({
   async function processFile(file: File | undefined) {
     setError(null);
     setPreview(null);
+    setPagina(1);
     setRunSummary(null);
     setCsvText(null);
     setFileName(file ? file.name : null);
@@ -169,6 +172,7 @@ export function ImportarCsv({
 
     const payload = result.data as PreviewData;
     setPreview(payload);
+    setPagina(1);
   }
 
   async function handleRunImport() {
@@ -196,6 +200,7 @@ export function ImportarCsv({
           left.line - right.line,
       )
     : [];
+  const paginaFilas = paginate(orderedRows, pagina, 25);
 
   let announcement = "";
   if (runSummary) {
@@ -302,7 +307,7 @@ export function ImportarCsv({
                 <span className={ETIQUETA}>Motivo</span>
               </div>
               <ul>
-                {orderedRows.map((row) => (
+                {paginaFilas.items.map((row) => (
                   <li
                     key={`${row.line}-${row.status}`}
                     className={`${FILA_GRID} border-b ${FILA} py-3`}
@@ -325,6 +330,32 @@ export function ImportarCsv({
                   </li>
                 ))}
               </ul>
+              {paginaFilas.totalPages > 1 && (
+                <nav
+                  aria-label="Paginación"
+                  className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-4"
+                >
+                  <button
+                    type="button"
+                    disabled={paginaFilas.page === 1}
+                    onClick={() => setPagina(paginaFilas.page - 1)}
+                    className={`${ENLACE} text-[14px]`}
+                  >
+                    ← Anterior
+                  </button>
+                  <span className={ETIQUETA}>
+                    página {paginaFilas.page} de {paginaFilas.totalPages} · {paginaFilas.total}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={paginaFilas.page === paginaFilas.totalPages}
+                    onClick={() => setPagina(paginaFilas.page + 1)}
+                    className={`${ENLACE} text-[14px]`}
+                  >
+                    Siguiente →
+                  </button>
+                </nav>
+              )}
             </div>
           </div>
         )

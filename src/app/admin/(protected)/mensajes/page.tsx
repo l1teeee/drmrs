@@ -8,6 +8,7 @@ import {
   renderActivationTexts,
 } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
+import { paginate } from "@/domain/pagination";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 import { loadInstagramConnectionStatus } from "@/infrastructure/instagram/instagram-connection-runtime";
@@ -16,6 +17,8 @@ import { scheduleMessageDelivery } from "@/infrastructure/messaging/schedule-mes
 
 import { ENLACE, ETIQUETA, FILA, NUMERO, REGLA, TITULO } from "../../ui";
 import { estadoInstagram } from "../estado-instagram";
+import { Paginacion } from "../Paginacion";
+import { hrefPagina, parsePagina } from "../parametros-pagina";
 
 import { FilaSinEnviar } from "./FilaSinEnviar";
 
@@ -51,6 +54,22 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
   const registros = await listRegistros({}, deps.registros);
   const activationTexts = await renderActivationTexts(registros, deps);
   const now = new Date();
+  const paginaSinEnviar = paginate(unsent, parsePagina(resolvedParams.pagina), 20);
+  const paginaContactos = paginate(unlinked, parsePagina(resolvedParams.pagina_contactos), 20);
+  const hrefSinEnviar = (n: number) =>
+    hrefPagina(
+      adminHref("/mensajes"),
+      { pagina_contactos: paginaContactos.page > 1 ? String(paginaContactos.page) : undefined },
+      "pagina",
+      n,
+    );
+  const hrefContactos = (n: number) =>
+    hrefPagina(
+      adminHref("/mensajes"),
+      { pagina: paginaSinEnviar.page > 1 ? String(paginaSinEnviar.page) : undefined },
+      "pagina_contactos",
+      n,
+    );
 
   return (
     <TransicionPagina>
@@ -100,7 +119,7 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
             <p className={ETIQUETA}>todo enviado.</p>
           ) : (
             <ul>
-              {unsent.map((message) => {
+              {paginaSinEnviar.items.map((message) => {
                 const estado = estadoInstagram(message.lastInboundAt, now);
                 const text = activationTexts.get(message.registrationId);
                 if (text === undefined) throw new Error("Activation text missing");
@@ -127,6 +146,17 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
               })}
             </ul>
           )}
+          <Paginacion
+            pagina={paginaSinEnviar.page}
+            totalPaginas={paginaSinEnviar.totalPages}
+            total={paginaSinEnviar.total}
+            hrefAnterior={paginaSinEnviar.page > 1 ? hrefSinEnviar(paginaSinEnviar.page - 1) : null}
+            hrefSiguiente={
+              paginaSinEnviar.page < paginaSinEnviar.totalPages
+                ? hrefSinEnviar(paginaSinEnviar.page + 1)
+                : null
+            }
+          />
         </section>
 
         <section className="grid gap-4">
@@ -138,7 +168,7 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
             <p className={ETIQUETA}>nadie pendiente.</p>
           ) : (
             <ul>
-              {unlinked.map((contact) => (
+              {paginaContactos.items.map((contact) => (
                 <li key={contact.id} className={`grid gap-1 border-b ${FILA} py-4`}>
                   <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
                     <span className="text-[18px] font-medium">
@@ -166,6 +196,17 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
               ))}
             </ul>
           )}
+          <Paginacion
+            pagina={paginaContactos.page}
+            totalPaginas={paginaContactos.totalPages}
+            total={paginaContactos.total}
+            hrefAnterior={paginaContactos.page > 1 ? hrefContactos(paginaContactos.page - 1) : null}
+            hrefSiguiente={
+              paginaContactos.page < paginaContactos.totalPages
+                ? hrefContactos(paginaContactos.page + 1)
+                : null
+            }
+          />
         </section>
       </main>
     </TransicionPagina>

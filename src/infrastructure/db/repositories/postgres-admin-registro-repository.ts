@@ -180,15 +180,21 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
     });
   }
 
-  async listAudit(before: number | null, limit: number): Promise<AuditEntry[]> {
+  async countAudit(): Promise<number> {
+    const result = await getPool().query<{ total: number }>(
+      "SELECT count(*)::int AS total FROM audit_logs",
+    );
+    return result.rows[0]!.total;
+  }
+
+  async listAudit(offset: number, limit: number): Promise<AuditEntry[]> {
     const result = await getPool().query<AuditRow>(
       `SELECT a.id, a.occurred_at, u.display_name AS actor_name, a.action,
               a.entity_type, a.entity_id, a.metadata
          FROM audit_logs a
          LEFT JOIN admin_users u ON u.id = a.actor_admin_id
-        WHERE ($1::bigint IS NULL OR a.id < $1)
-        ORDER BY a.id DESC LIMIT $2`,
-      [before, limit],
+        ORDER BY a.id DESC LIMIT $2 OFFSET $1`,
+      [offset, limit],
     );
     return result.rows.map((row) => ({
       id: Number(row.id),

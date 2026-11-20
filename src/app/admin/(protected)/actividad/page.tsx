@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { connection } from "next/server";
 
 import type { AuditEntry } from "@/application/admin-registros/admin-registro-store";
@@ -10,7 +9,9 @@ import { adminHref } from "@/infrastructure/admin/admin-path";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 
-import { ENLACE, FILA, TITULO } from "../../ui";
+import { FILA, TITULO } from "../../ui";
+import { Paginacion } from "../Paginacion";
+import { hrefPagina, parsePagina } from "../parametros-pagina";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -57,14 +58,6 @@ function formatAuditAction(entry: AuditEntry): string {
   return STATIC_ACTION_LABELS[entry.action] ?? entry.action;
 }
 
-function parseBefore(raw: string | string[] | undefined): number | undefined {
-  if (typeof raw !== "string" || raw.trim() === "") {
-    return undefined;
-  }
-  const value = Number(raw);
-  return Number.isInteger(value) && value > 0 ? value : undefined;
-}
-
 export default async function ActividadPage({
   searchParams,
 }: {
@@ -74,12 +67,11 @@ export default async function ActividadPage({
   await requireAdmin("page");
 
   const resolvedParams = await searchParams;
-  const before = parseBefore(resolvedParams.before);
-  const entries = await listAuditPage(
-    before ?? null,
+  const resultado = await listAuditPage(
+    parsePagina(resolvedParams.pagina),
     adminRegistrosDependencies(),
   );
-  const lastEntry = entries[entries.length - 1];
+  const href = (n: number) => hrefPagina(adminHref("/actividad"), {}, "pagina", n);
 
   return (
     <TransicionPagina>
@@ -87,7 +79,7 @@ export default async function ActividadPage({
         <h1 className={TITULO}>Actividad</h1>
 
         <ul className={`border-t ${FILA}`}>
-          {entries.map((entry) => (
+          {resultado.items.map((entry) => (
             <li
               key={entry.id}
               className={`grid gap-1 border-b ${FILA} py-3 font-mono text-[13px] sm:grid-cols-[10rem_12rem_1fr] sm:gap-x-6`}
@@ -105,16 +97,13 @@ export default async function ActividadPage({
           ))}
         </ul>
 
-        {entries.length === 50 && lastEntry && (
-          <div>
-            <Link
-              href={adminHref(`/actividad?before=${lastEntry.id}`)}
-              className={`${ENLACE} text-[14px]`}
-            >
-              Más antiguos
-            </Link>
-          </div>
-        )}
+        <Paginacion
+          pagina={resultado.page}
+          totalPaginas={resultado.totalPages}
+          total={resultado.total}
+          hrefAnterior={resultado.page > 1 ? href(resultado.page - 1) : null}
+          hrefSiguiente={resultado.page < resultado.totalPages ? href(resultado.page + 1) : null}
+        />
       </main>
     </TransicionPagina>
   );
