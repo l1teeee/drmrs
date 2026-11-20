@@ -256,37 +256,6 @@ export class PostgresMessagingRepository implements InstagramEventRepository {
     });
   }
 
-  linkRegistrationContactByUsername(registrationId: string): Promise<boolean> {
-    return inTransaction(getPool(), transactionSettings, async (client) => {
-      const registrations = await client.query<{ instagram_handle: string }>(
-        "SELECT instagram_handle FROM registrations WHERE id = $1 AND messaging_contact_id IS NULL",
-        [registrationId],
-      );
-      const registration = registrations.rows[0];
-      if (!registration) return false;
-      // The contact is locked before the registration, as in linkByUsername, so both paths take locks in the same order.
-      const contacts = await client.query<{ id: string }>(
-        `SELECT c.id FROM messaging_contacts c
-          WHERE c.username = $1
-            AND NOT EXISTS (SELECT 1 FROM registrations r WHERE r.messaging_contact_id = c.id)
-          ORDER BY c.last_inbound_at DESC NULLS LAST, c.id LIMIT 1
-          FOR UPDATE OF c`,
-        [registration.instagram_handle],
-      );
-      const contact = contacts.rows[0];
-      if (!contact) return false;
-      const linked = await client.query(
-        `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'USERNAME'
-           WHERE id = $2 AND messaging_contact_id IS NULL`,
-        [contact.id, registrationId],
-      );
-      if (linked.rowCount !== 1) return false;
-      await finishLink(client, registrationId, contact.id, "USERNAME");
-      await releasePending(client, contact.id);
-      return true;
-    });
-  }
-
   ensureLinkCode(id: string): Promise<string> {
     return inTransaction(getPool(), transactionSettings, async (client) => {
       const result = await client.query<{ ig_link_code: string | null }>(

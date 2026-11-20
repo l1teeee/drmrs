@@ -2,10 +2,14 @@ import { z } from "zod";
 
 import type { NewRegistration } from "@/domain/registration/registration";
 
+const LINK_LIKE_TEXT =
+  /:\/\/|www\.|@|[a-z0-9-]+\.(?:com|net|org|mx|io|co|app|me|ly|link|xyz|info|site|online|store|shop|gg|tv)\b/i;
+
 export const registrationRequestSchema = z.object({
   nombre: z
     .string()
     .refine((value) => !/[\p{Cc}\p{Cf}]/u.test(value))
+    .refine((value) => !LINK_LIKE_TEXT.test(value))
     .transform((value) => value.trim().replace(/\s+/g, " "))
     .pipe(z.string().min(2).max(80)),
   whatsapp: z.string().length(12).regex(/^52\d{10}$/),
@@ -28,6 +32,7 @@ export const registrationRequestSchema = z.object({
   dreamer: z
     .string()
     .refine((value) => !/[\p{Cc}\p{Cf}]/u.test(value))
+    .refine((value) => !LINK_LIKE_TEXT.test(value))
     .trim()
     .max(80)
     .optional()

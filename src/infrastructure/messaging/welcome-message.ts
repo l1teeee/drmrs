@@ -5,7 +5,6 @@ import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registr
 import { getEnv } from "@/infrastructure/config/env";
 import { getPool } from "@/infrastructure/db/client";
 import { postgresAdminMessageRepository } from "@/infrastructure/db/repositories/postgres-admin-message-repository";
-import { postgresMessagingRepository } from "@/infrastructure/db/repositories/postgres-messaging-repository";
 import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 
 import { scheduleMessageDelivery } from "./schedule-message-delivery";
@@ -38,7 +37,6 @@ export async function queueWelcomeMessage(registrationId: string): Promise<void>
     if (mode !== "instagram" && mode !== "log") return;
     if (await welcomeAlreadyQueued(registrationId)) return;
 
-    await postgresMessagingRepository.linkRegistrationContactByUsername(registrationId);
     const text = await renderWelcomeText(registrationId);
     if (text === null) return;
     const result = await postgresAdminMessageRepository.enqueue(null, registrationId, text, "BIENVENIDA");

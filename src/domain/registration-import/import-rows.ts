@@ -3,6 +3,9 @@ import type { Size } from "@/domain/registration/registration";
 export const MAX_IMPORT_ROWS = 2000;
 export const MAX_IMPORT_COLUMNS = 40;
 
+const LINK_LIKE_TEXT =
+  /:\/\/|www\.|@|[a-z0-9-]+\.(?:com|net|org|mx|io|co|app|me|ly|link|xyz|info|site|online|store|shop|gg|tv)\b/i;
+
 export type ImportField =
   | "numero"
   | "nombre"
@@ -106,7 +109,10 @@ function parseRow(
 
   const nameText = cell("nombre");
   const fullName = nameText.trim().replace(/\s+/g, " ");
-  if (/[\p{Cc}\p{Cf}]/u.test(nameText) || fullName.length < 2 || fullName.length > 80) {
+  if (
+    /[\p{Cc}\p{Cf}]/u.test(nameText) || LINK_LIKE_TEXT.test(nameText) ||
+    fullName.length < 2 || fullName.length > 80
+  ) {
     return { ok: false, reason: "nombre inválido" };
   }
 
@@ -147,7 +153,10 @@ function parseRow(
 
   const nomineeText = cell("dreamer");
   const archiveNominee = nomineeText.trim() || null;
-  if (/[\p{Cc}\p{Cf}]/u.test(nomineeText) || (archiveNominee !== null && archiveNominee.length > 80)) {
+  if (
+    /[\p{Cc}\p{Cf}]/u.test(nomineeText) || LINK_LIKE_TEXT.test(nomineeText) ||
+    (archiveNominee !== null && archiveNominee.length > 80)
+  ) {
     return { ok: false, reason: "dreamer inválido" };
   }
 
