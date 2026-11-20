@@ -6,7 +6,7 @@ import { useRef, useState, useTransition } from "react";
 import type { TemplateKey } from "@/domain/messaging/message-template";
 
 import { queueInstagramMessageAction } from "../../mensajes/actions";
-import { BotonArchivo, CAMPO_AREA, ENLACE, ETIQUETA, REGLA } from "../../../ui";
+import { CAMPO_AREA, ENLACE, ETIQUETA, REGLA } from "../../../ui";
 
 const MAX_LENGTH = 1000;
 const RESULTADO_MS = 4000;
@@ -86,7 +86,7 @@ export function EnviarMensaje({
   }
 
   return (
-    <section className="grid gap-3">
+    <section className="grid gap-2">
       <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
         <span className={ETIQUETA}>Plantillas:</span>
         {plantillas.map((entry) => (
@@ -135,7 +135,7 @@ export function EnviarMensaje({
       )}
       <textarea
         ref={textareaRef}
-        rows={3}
+        rows={2}
         maxLength={MAX_LENGTH}
         placeholder="Escribe un mensaje…"
         aria-label="Mensaje"
@@ -151,15 +151,20 @@ export function EnviarMensaje({
             handleSend();
           }
         }}
-        className={CAMPO_AREA}
+        className={`${CAMPO_AREA} py-2 text-[15px]`}
       />
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <span className={`${ETIQUETA} tabular-nums`}>
           {texto.length}/{MAX_LENGTH}
         </span>
-        <BotonArchivo disabled={vacio || isPending} onClick={handleSend}>
+        <button
+          type="button"
+          disabled={vacio || isPending}
+          onClick={handleSend}
+          className="border border-azul px-4 py-2 text-[14px] font-medium text-azul transition-colors duration-300 hover:bg-azul hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-azul disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+        >
           Enviar
-        </BotonArchivo>
+        </button>
       </div>
       {confirmando && (
         <div className="grid gap-2">
