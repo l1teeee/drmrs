@@ -29,9 +29,9 @@ export default async function PlantillasPage() {
 
   return (
     <TransicionPagina>
-      <main className="grid gap-8">
+      <main className="grid gap-6">
         <h1 className={TITULO}>Plantillas de Instagram</h1>
-        <div className="grid items-start gap-x-8 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid items-start gap-x-6 gap-y-6 md:grid-cols-2 xl:grid-cols-3">
           {ordered.map((template) => (
             <EditorPlantilla
               key={template.key}

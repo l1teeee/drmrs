@@ -107,10 +107,10 @@ export default async function RegistrosPage({
 
   return (
     <TransicionPagina>
-      <main className="grid gap-10">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
+      <main className="grid gap-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <h1 className={TITULO}>Registros</h1>
-          <div className="flex items-baseline gap-6">
+          <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[13px]">
             <Refrescar />
             <Link href={adminHref("/registros/importar")} className={ENLACE}>
               Importar
@@ -121,14 +121,14 @@ export default async function RegistrosPage({
           </div>
         </div>
 
-        <dl className="flex flex-wrap gap-x-0 gap-y-8">
+        <dl className="grid grid-cols-3 gap-x-4 gap-y-4 sm:flex sm:flex-wrap sm:gap-x-0">
           {summary.map((entry) => (
             <div
               key={entry.key}
-              className={`flex flex-col gap-2 pr-8 md:border-l md:px-8 md:first:border-l-0 md:first:pl-0 ${REGLA}`}
+              className={`flex flex-col gap-1 sm:border-l sm:px-6 sm:first:border-l-0 sm:first:pl-0 ${REGLA}`}
             >
               <dt className={`${ETIQUETA} order-2`}>{entry.label}</dt>
-              <dd className={`${NUMERO} text-[56px] leading-none`}>{entry.count}</dd>
+              <dd className={`${NUMERO} text-[28px] leading-none md:text-[32px]`}>{entry.count}</dd>
             </div>
           ))}
         </dl>
@@ -136,7 +136,7 @@ export default async function RegistrosPage({
         <form
           method="get"
           action={adminHref("/registros")}
-          className="grid gap-6 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:items-end"
+          className="grid grid-cols-2 items-end gap-x-4 gap-y-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_auto_auto] md:gap-x-6"
         >
           <input
             type="text"
@@ -145,7 +145,7 @@ export default async function RegistrosPage({
             defaultValue={filters.q ?? ""}
             placeholder="Buscar nombre o Instagram"
             maxLength={60}
-            className={CAMPO}
+            className={`${CAMPO} col-span-2 md:col-span-1`}
           />
           <select
             name="estado"
@@ -180,18 +180,18 @@ export default async function RegistrosPage({
           <div>
             <BotonArchivo type="submit">Filtrar</BotonArchivo>
           </div>
-          <Link href={adminHref("/registros")} className={`${ENLACE} md:pb-4`}>
+          <Link href={adminHref("/registros")} className={`${ENLACE} self-center justify-self-start text-[13px]`}>
             Limpiar
           </Link>
         </form>
 
         {registros.length === 0 ? (
           hasFilters ? (
-            <p className={`${ETIQUETA} text-[14px]`}>nada con esos filtros.</p>
+            <p className={`${ETIQUETA} text-[13px]`}>nada con esos filtros.</p>
           ) : (
-            <div className="grid justify-items-start gap-3">
-              <p className={`${ETIQUETA} text-[14px]`}>sin expedientes todavía.</p>
-              <Link href={adminHref("/registros/importar")} className={ENLACE}>
+            <div className="grid justify-items-start gap-2">
+              <p className={`${ETIQUETA} text-[13px]`}>sin expedientes todavía.</p>
+              <Link href={adminHref("/registros/importar")} className={`${ENLACE} text-[13px]`}>
                 Importar el CSV del Google Sheet
               </Link>
             </div>

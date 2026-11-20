@@ -56,7 +56,7 @@ export function VincularContacto({
   }
 
   return (
-    <section className="grid gap-5">
+    <section className="grid gap-3">
       <h2 className={ETIQUETA}>Vincular a mano</h2>
       <select
         aria-label="Contacto"
@@ -76,7 +76,7 @@ export function VincularContacto({
           </option>
         ))}
       </select>
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <BotonArchivo disabled={isPending || contactId === ""} onClick={handleLink}>
           Vincular
         </BotonArchivo>

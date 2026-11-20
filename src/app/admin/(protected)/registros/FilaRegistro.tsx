@@ -27,7 +27,7 @@ export interface FilaRegistroProps {
   activacion: { text: string; sentAt: string | null } | null;
 }
 
-const ACCION = `${ENLACE} text-[14px]`;
+const ACCION = `${ENLACE} text-[13px]`;
 
 export function FilaRegistro({
   id,
@@ -99,20 +99,20 @@ export function FilaRegistro({
 
   return (
     <li
-      className={`grid gap-x-8 gap-y-4 border-b ${FILA} py-6 md:grid-cols-[minmax(0,1fr)_auto]`}
+      className={`grid gap-x-6 gap-y-2 border-b ${FILA} py-4 md:grid-cols-[minmax(0,1fr)_auto]`}
     >
-      <div className="flex items-start gap-4 md:gap-6">
-        <span className={`${NUMERO} text-[32px] leading-none md:text-[40px]`}>
+      <div className="flex items-start gap-3 md:gap-4">
+        <span className={`${NUMERO} w-12 shrink-0 text-[20px] leading-none md:w-14 md:text-[22px]`}>
           {formattedNumber}
         </span>
-        <div className="grid min-w-0 gap-3">
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <span className="text-[18px]">{fullName}</span>
+        <div className="grid min-w-0 gap-1.5">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+            <span className="text-[15px] font-medium [overflow-wrap:anywhere]">{fullName}</span>
             <a
               href={`https://instagram.com/${cleanHandle}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`${ENLACE} break-all text-[16px]`}
+              className={`${ENLACE} break-all text-[13px]`}
             >
               @{cleanHandle}
             </a>
@@ -123,8 +123,8 @@ export function FilaRegistro({
         </div>
       </div>
 
-      <div className="grid content-start gap-2 md:justify-items-end">
-        <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2 md:justify-end">
+      <div className="grid content-start gap-2 pl-[3.75rem] md:justify-items-end md:pl-0">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 md:justify-end">
           <Link href={conversacionHref} className={ACCION}>
             Conversación
           </Link>
@@ -186,7 +186,7 @@ export function FilaRegistro({
         <div aria-live="polite">
           {copied && <span className="sr-only">Link copiado</span>}
           {actionError && (
-            <p role="alert" className="text-[14px] text-tinta">
+            <p role="alert" className="text-[13px] text-tinta">
               {actionError}
             </p>
           )}

@@ -10,7 +10,6 @@ import {
   FILA,
   NUMERO,
   REGLA,
-  TITULO,
 } from "@/app/admin/ui";
 import { paginate } from "@/domain/pagination";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
@@ -49,8 +48,8 @@ interface RunSummary {
 
 const MAX_BYTES = 1_048_576;
 const FILA_GRID =
-  "grid grid-cols-[3rem_1fr_auto] gap-x-4 gap-y-1 sm:grid-cols-[4rem_9rem_5rem_1fr]";
-const CONTEO = `${NUMERO} text-[56px] leading-none`;
+  "grid grid-cols-[3rem_minmax(0,1fr)_auto] gap-x-4 gap-y-1 sm:grid-cols-[4rem_9rem_5rem_minmax(0,1fr)]";
+const CONTEO = `${NUMERO} text-[28px] leading-none md:text-[32px]`;
 
 const STATUS_LABELS: Record<PreviewRowStatus, string> = {
   new: "Nuevo",
@@ -210,7 +209,7 @@ export function ImportarCsv({
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-5">
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -226,11 +225,11 @@ export function ImportarCsv({
           className="peer absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         />
         <div
-          className={`border px-6 py-[clamp(40px,8vw,96px)] text-center transition-colors duration-300 peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-azul peer-hover:border-tinta peer-disabled:opacity-40 motion-reduce:transition-none ${
+          className={`border px-4 py-[clamp(28px,5vw,56px)] text-center transition-colors duration-300 peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-azul peer-hover:border-tinta peer-disabled:opacity-40 motion-reduce:transition-none ${
             dragging ? "border-azul" : "border-tinta/20"
           }`}
         >
-          <p className="text-[18px] text-tinta">
+          <p className="text-[15px] text-tinta">
             Suelta el CSV del Google Sheet o{" "}
             <span className="underline underline-offset-4">
               elige un archivo
@@ -239,7 +238,7 @@ export function ImportarCsv({
         </div>
       </div>
 
-      {fileName && <p className={ETIQUETA}>{fileName}</p>}
+      {fileName && <p className={`${ETIQUETA} break-all`}>{fileName}</p>}
 
       <p role="status" className={`${ETIQUETA} empty:sr-only`}>
         {sending ? "Procesando…" : ""}
@@ -250,14 +249,14 @@ export function ImportarCsv({
       </p>
 
       {error && (
-        <p role="alert" className="text-[16px]">
+        <p role="alert" className="text-[14px]">
           {error}
         </p>
       )}
 
       {runSummary ? (
-        <div className={`grid gap-6 border-t ${REGLA} pt-8`}>
-          <p className={TITULO}>
+        <div className={`grid gap-4 border-t ${REGLA} pt-5`}>
+          <p className="text-[17px] font-medium tracking-[-0.01em]">
             {`Importados ${runSummary.created}. Ya estaban ${runSummary.existing}. Conflictos ${runSummary.conflicts}. Con error ${runSummary.invalid}.`}
           </p>
           <div>
@@ -268,21 +267,21 @@ export function ImportarCsv({
         </div>
       ) : (
         preview && (
-          <div className={`grid gap-8 border-t ${REGLA} pt-8`}>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4">
-              <div className="grid gap-2">
+          <div className={`grid gap-5 border-t ${REGLA} pt-5`}>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+              <div className="grid gap-1">
                 <p className={CONTEO}>{preview.counts.new}</p>
                 <p className={ETIQUETA}>nuevos</p>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1">
                 <p className={CONTEO}>{preview.counts.existing}</p>
                 <p className={ETIQUETA}>ya estaban</p>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1">
                 <p className={CONTEO}>{preview.counts.conflict}</p>
                 <p className={ETIQUETA}>en conflicto</p>
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1">
                 <p className={CONTEO}>{preview.counts.invalid}</p>
                 <p className={ETIQUETA}>con error</p>
               </div>
@@ -316,7 +315,7 @@ export function ImportarCsv({
                       <span className="sm:hidden">L</span>
                       {row.line}
                     </span>
-                    <span className="text-[16px]">
+                    <span className="text-[14px]">
                       {STATUS_LABELS[row.status]}
                     </span>
                     <span className="font-mono text-[13px]">
@@ -324,7 +323,7 @@ export function ImportarCsv({
                         ? formatRegistrationNumber(row.registrationNumber)
                         : "—"}
                     </span>
-                    <span className="col-span-2 col-start-2 text-[16px] text-tinta/60 sm:col-span-1 sm:col-start-auto">
+                    <span className="col-span-2 col-start-2 min-w-0 text-[14px] text-tinta/60 [overflow-wrap:anywhere] sm:col-span-1 sm:col-start-auto">
                       {row.reason ?? "—"}
                     </span>
                   </li>
@@ -333,13 +332,13 @@ export function ImportarCsv({
               {paginaFilas.totalPages > 1 && (
                 <nav
                   aria-label="Paginación"
-                  className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-4"
+                  className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-3"
                 >
                   <button
                     type="button"
                     disabled={paginaFilas.page === 1}
                     onClick={() => setPagina(paginaFilas.page - 1)}
-                    className={`${ENLACE} text-[14px]`}
+                    className={`${ENLACE} text-[13px]`}
                   >
                     ← Anterior
                   </button>
@@ -350,7 +349,7 @@ export function ImportarCsv({
                     type="button"
                     disabled={paginaFilas.page === paginaFilas.totalPages}
                     onClick={() => setPagina(paginaFilas.page + 1)}
-                    className={`${ENLACE} text-[14px]`}
+                    className={`${ENLACE} text-[13px]`}
                   >
                     Siguiente →
                   </button>

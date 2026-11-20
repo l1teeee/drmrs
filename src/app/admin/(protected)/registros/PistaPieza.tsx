@@ -74,9 +74,9 @@ export function PistaPieza({ registrationId, current, activo }: PistaPiezaProps)
 
   return (
     <div className="grid gap-2">
-      <div className={`flex flex-wrap items-baseline gap-x-4 gap-y-1 ${isPending ? "opacity-60" : ""}`}>
+      <div className={`flex flex-wrap items-baseline gap-x-3 gap-y-1 ${isPending ? "opacity-60" : ""}`}>
         <span className={ETIQUETA}>estado</span>
-        <span className="font-mono text-[14px] text-azul">
+        <span className="font-mono text-[13px] text-azul">
           <Subrayado>{PIECE_STATUS_LABELS[current]}</Subrayado>
         </span>
         <select
@@ -84,7 +84,7 @@ export function PistaPieza({ registrationId, current, activo }: PistaPiezaProps)
           value=""
           disabled={isPending}
           onChange={(event) => handleAsk(event.target.value as PieceStatus)}
-          className="border-b border-tinta/20 bg-transparent py-1 font-mono text-[13px] text-tinta outline-none focus:border-tinta"
+          className="border-b border-tinta/20 bg-transparent py-1 font-mono text-[12px] text-tinta outline-none focus:border-tinta"
         >
           <option value="" disabled>
             Cambiar estado…
@@ -97,7 +97,7 @@ export function PistaPieza({ registrationId, current, activo }: PistaPiezaProps)
         </select>
       </div>
 
-      <div aria-live="polite" className="font-mono text-[13px] text-tinta/80">
+      <div aria-live="polite" className="font-mono text-[12px] text-tinta/80">
         {asking && (
           <div className="grid gap-1">
             <p>

@@ -125,16 +125,16 @@ export default async function ConversacionPage({
           </>
         }
         encabezado={
-          <div className="grid shrink-0 gap-3">
+          <div className="grid shrink-0 gap-2">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
               <div className="grid gap-1">
                 <h1
                   tabIndex={-1}
-                  className="text-[22px] font-medium leading-tight tracking-[-0.02em] outline-none break-all"
+                  className="text-[18px] md:text-[20px] font-medium leading-tight tracking-[-0.02em] outline-none break-all"
                 >
                   @{handle}
                 </h1>
-                <p className={ETIQUETA}>
+                <p className={`${ETIQUETA} [overflow-wrap:anywhere]`}>
                   {registration.fullName} · {estado.etiqueta}
                 </p>
               </div>
@@ -164,16 +164,16 @@ export default async function ConversacionPage({
             </HiloMensajes>
           )}
 
-          <div className={`grid shrink-0 gap-4 border-t ${REGLA} pt-4 md:max-h-[40dvh] md:overflow-y-auto`}>
+          <div className={`grid shrink-0 gap-3 border-t ${REGLA} pt-3 md:max-h-[40dvh] md:overflow-y-auto`}>
             {enCola > 0 && (
-              <p role="status" className="border-l-2 border-azul pl-3 text-[14px] text-azul">
+              <p role="status" className="border-l-2 border-azul pl-3 text-[13px] text-azul">
                 {enCola === 1
                   ? "1 mensaje en cola: se enviará cuando conteste."
                   : `${enCola} mensajes en cola: se enviarán cuando conteste.`}
               </p>
             )}
             {activationText !== null && (
-              <div className="grid gap-3">
+              <div className="grid gap-2">
                 <p className={ETIQUETA}>
                   Inactivo. Envíale la activación; cuando responda, drmr manda solo lo pendiente.
                 </p>

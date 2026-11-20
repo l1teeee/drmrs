@@ -5,15 +5,15 @@ import { useActionState } from "react";
 import { BotonArchivoTinta } from "../ui";
 import { loginAction } from "./actions";
 
-const ETIQUETA = "font-mono text-[12px] text-tinta/60";
+const ETIQUETA = "font-mono text-[11px] text-tinta/60";
 const CAMPO_PAPEL =
-  "w-full border-b border-tinta/30 bg-transparent py-2 text-[17px] text-tinta outline-none focus:border-tinta focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-tinta";
+  "w-full border-b border-tinta/30 bg-transparent py-1.5 text-[16px] text-tinta outline-none focus:border-tinta focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-tinta";
 
 export function LoginForm() {
   const [state, action, pending] = useActionState(loginAction, { error: "" });
 
   return (
-    <form action={action} className="grid gap-6">
+    <form action={action} className="grid gap-5">
       <label className="grid gap-1">
         <span className={ETIQUETA}>correo</span>
         <input
@@ -41,7 +41,7 @@ export function LoginForm() {
           {pending ? "entrando…" : "Entrar"}
         </BotonArchivoTinta>
       </div>
-      <div aria-live="polite" className="text-center font-sans text-[14px] text-tinta">
+      <div aria-live="polite" className="text-center font-sans text-[13px] text-tinta">
         {state.error && <p>{state.error}</p>}
       </div>
     </form>

@@ -31,19 +31,19 @@ export default async function LoginPage() {
               width={177}
               height={72}
               preload
-              className="h-[clamp(56px,8vw,96px)] w-auto"
+              className="h-[clamp(44px,6vw,64px)] w-auto"
             />
           </Link>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-8">
           <LoginForm />
         </div>
 
-        <div className="mt-10 text-center">
+        <div className="mt-8 text-center">
           <Link
             href="/"
-            className={`font-mono text-[12px] text-tinta/60 hover:text-tinta ${FOCO_PAPEL}`}
+            className={`font-mono text-[11px] text-tinta/60 hover:text-tinta ${FOCO_PAPEL}`}
           >
             ← volver al sitio
           </Link>

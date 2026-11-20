@@ -39,7 +39,7 @@ export function NavArchivo({ items }: NavArchivoProps) {
   const active = activeHref(pathname, items);
 
   return (
-    <nav aria-label="Archivo" className="flex flex-wrap gap-x-8 gap-y-2 text-[15px]">
+    <nav aria-label="Archivo" className="-mx-1.5 flex gap-x-5 overflow-x-auto whitespace-nowrap px-1.5 py-1.5 text-[14px] [scrollbar-width:none] sm:gap-x-7">
       {items.map((item) => {
         const isActive = item.href === active;
         return (
@@ -47,7 +47,7 @@ export function NavArchivo({ items }: NavArchivoProps) {
             key={item.href}
             href={item.href}
             aria-current={isActive ? "page" : undefined}
-            className={`transition-colors duration-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-azul motion-reduce:transition-none ${
+            className={`shrink-0 transition-colors duration-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-azul motion-reduce:transition-none ${
               isActive ? "text-azul" : "text-tinta/75 hover:text-azul"
             }`}
           >

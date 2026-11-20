@@ -126,15 +126,15 @@ export function EditorPlantilla({
 
   return (
     <section
-      className={`grid content-start gap-4 border-t ${REGLA} pt-6 ${abierta ? "md:col-span-2 xl:col-span-3" : ""}`}
+      className={`grid content-start gap-3 border-t ${REGLA} pt-4 ${abierta ? "md:col-span-2 xl:col-span-3" : ""}`}
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-[20px] font-medium tracking-[-0.02em]">{title}</h2>
+        <h2 className="text-[16px] font-medium tracking-[-0.01em]">{title}</h2>
         <span className={ETIQUETA}>editada {updatedAtLabel}</span>
       </div>
       {!abierta ? (
         <>
-          <p className="line-clamp-4 whitespace-pre-wrap break-words text-[15px] text-tinta/70">
+          <p className="line-clamp-3 whitespace-pre-wrap break-words text-[14px] text-tinta/70">
             {renderMessageTemplate(body, SAMPLE_VALUES)}
           </p>
           {feedback !== null && !feedback.failed ? (
@@ -147,14 +147,14 @@ export function EditorPlantilla({
             aria-expanded={false}
             aria-controls={`editor-${templateKey}`}
             onClick={() => setAbierta(true)}
-            className={`${ENLACE} justify-self-start text-[14px]`}
+            className={`${ENLACE} justify-self-start text-[13px]`}
           >
             Editar
           </button>
         </>
       ) : (
-      <div id={`editor-${templateKey}`} className="grid gap-4">
-      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[13px] text-tinta/60">
+      <div id={`editor-${templateKey}`} className="grid max-w-3xl gap-3">
+      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[12px] text-tinta/60">
         <span>Variables:</span>
         {TEMPLATE_VARIABLES.map((variable) => (
           <button
@@ -186,11 +186,11 @@ export function EditorPlantilla({
       </div>
       <div className="grid gap-1">
         <span className={ETIQUETA}>vista previa</span>
-        <p className="whitespace-pre-wrap break-words text-[16px] text-tinta/80">
+        <p className="whitespace-pre-wrap break-words text-[14px] text-tinta/80">
           {renderMessageTemplate(body, SAMPLE_VALUES)}
         </p>
       </div>
-      <div className="flex flex-wrap items-center gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <BotonArchivo
           disabled={isPending || body === initialBody}
           onClick={handleSave}
@@ -198,7 +198,7 @@ export function EditorPlantilla({
           Guardar
         </BotonArchivo>
         {feedback !== null && feedback.failed ? (
-          <span role="alert" className="text-[14px] text-tinta">
+          <span role="alert" className="text-[13px] text-tinta">
             {feedback.message}
           </span>
         ) : (
@@ -216,7 +216,7 @@ export function EditorPlantilla({
             setFeedback(null);
             setAbierta(false);
           }}
-          className={`${ENLACE} text-[14px]`}
+          className={`${ENLACE} text-[13px]`}
         >
           {body === initialBody ? "Cerrar" : "Cancelar"}
         </button>

@@ -23,7 +23,7 @@ interface Vista {
   error: string | null;
 }
 
-const TEXT_ACTION = `${ENLACE} text-[14px]`;
+const TEXT_ACTION = `${ENLACE} text-[13px]`;
 const ETAPA_TEXTO = "Podrás agregar fotos cuando la pieza esté en personalización a mano.";
 const NO_SE_PUDO_SUBIR = "No se pudo subir.";
 
@@ -153,7 +153,7 @@ export function FotosPieza({ registrationId, fotoIds, habilitado }: FotosPiezaPr
       </p>
 
       {fotoIds.length > 0 && (
-        <ul className="grid grid-cols-3 gap-2">
+        <ul className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-3">
           {fotoIds.map((id, indice) => (
             <li key={id} className="grid content-start gap-1">
               <div className="relative aspect-square overflow-hidden bg-papel">
@@ -203,7 +203,7 @@ export function FotosPieza({ registrationId, fotoIds, habilitado }: FotosPiezaPr
 
       {vistas.length > 0 && (
         <>
-          <ul className="grid grid-cols-3 gap-2">
+          <ul className="grid grid-cols-4 gap-2 sm:grid-cols-5 md:grid-cols-3">
             {vistas.map((vista) => (
               <li key={vista.key} className="grid content-start gap-1">
                 <div className="relative aspect-square overflow-hidden border border-azul bg-papel">
@@ -224,11 +224,11 @@ export function FotosPieza({ registrationId, fotoIds, habilitado }: FotosPiezaPr
                 >
                   Quitar
                 </button>
-                {vista.error !== null && <span className={ETIQUETA}>{vista.error}</span>}
+                {vista.error !== null && <span className={`${ETIQUETA} [overflow-wrap:anywhere]`}>{vista.error}</span>}
               </li>
             ))}
           </ul>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             <BotonArchivo disabled={ocupado} onClick={subir}>
               {vistas.length === 1 ? "Subir 1 foto" : `Subir ${vistas.length} fotos`}
             </BotonArchivo>
@@ -247,7 +247,7 @@ export function FotosPieza({ registrationId, fotoIds, habilitado }: FotosPiezaPr
       {!habilitado && <p className={ETIQUETA}>{ETAPA_TEXTO}</p>}
       {habilitado && cupo > 0 && (
         <label
-          className={`${ENLACE} cursor-pointer justify-self-start text-[14px] focus-within:outline focus-within:outline-1 focus-within:outline-offset-4 focus-within:outline-azul`}
+          className={`${ENLACE} cursor-pointer justify-self-start text-[13px] focus-within:outline focus-within:outline-1 focus-within:outline-offset-4 focus-within:outline-azul`}
         >
           Agregar fotos
           <input

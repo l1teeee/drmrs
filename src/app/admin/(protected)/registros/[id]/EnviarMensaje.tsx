@@ -95,7 +95,7 @@ export function EnviarMensaje({
             type="button"
             disabled={isPending}
             onClick={() => handlePlantilla(entry.key, entry.texto)}
-            className={`${ENLACE} text-[14px]`}
+            className={`${ENLACE} text-[13px]`}
           >
             {entry.label}
           </button>
@@ -105,7 +105,7 @@ export function EnviarMensaje({
           aria-expanded={verTodas}
           aria-controls="todas-las-plantillas"
           onClick={() => setVerTodas(!verTodas)}
-          className={`${ENLACE} text-[14px]`}
+          className={`${ENLACE} text-[13px]`}
         >
           {verTodas ? "Ocultar plantillas" : "Todas las plantillas"}
         </button>
@@ -124,10 +124,10 @@ export function EnviarMensaje({
                 onKeyDown={(event) => {
                   if (event.key === "Escape") setVerTodas(false);
                 }}
-                className="grid w-full gap-1 px-3 py-2 text-left hover:bg-papel focus-visible:outline focus-visible:outline-1 focus-visible:outline-azul"
+                className="grid w-full gap-1 px-2.5 py-1.5 text-left hover:bg-papel focus-visible:outline focus-visible:outline-1 focus-visible:outline-azul"
               >
-                <span className="text-[14px] font-medium">{entry.label}</span>
-                <span className={`${ETIQUETA} line-clamp-2`}>{entry.texto}</span>
+                <span className="text-[13px] font-medium">{entry.label}</span>
+                <span className={`${ETIQUETA} line-clamp-2 [overflow-wrap:anywhere]`}>{entry.texto}</span>
               </button>
             </li>
           ))}
@@ -151,9 +151,9 @@ export function EnviarMensaje({
             handleSend();
           }
         }}
-        className={`${CAMPO_AREA} py-2 text-[15px]`}
+        className={`${CAMPO_AREA} py-2`}
       />
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <span className={`${ETIQUETA} tabular-nums`}>
           {texto.length}/{MAX_LENGTH}
         </span>
@@ -173,14 +173,14 @@ export function EnviarMensaje({
             este mensaje quedará en cola y se enviará cuando conteste.
           </p>
           <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-            <button type="button" disabled={isPending} onClick={enviar} className={`${ENLACE} text-[14px]`}>
+            <button type="button" disabled={isPending} onClick={enviar} className={`${ENLACE} text-[13px]`}>
               Sí, dejar en cola
             </button>
             <button
               type="button"
               disabled={isPending}
               onClick={() => setConfirmando(false)}
-              className={`${ENLACE} text-[14px]`}
+              className={`${ENLACE} text-[13px]`}
             >
               No
             </button>

@@ -27,7 +27,7 @@ export interface FilaSinEnviarProps {
   activacion: { text: string; sentAt: string | null } | null;
 }
 
-const TEXT_ACTION = `${ENLACE} text-[14px]`;
+const TEXT_ACTION = `${ENLACE} text-[13px]`;
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -85,27 +85,27 @@ export function FilaSinEnviar({
   }
 
   return (
-    <li className={`grid grid-cols-[auto_1fr] gap-x-4 border-b ${FILA} py-5 sm:gap-x-6`}>
-      <span className={`${NUMERO} text-[28px] leading-none`}>
+    <li className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 border-b ${FILA} py-3.5 sm:gap-x-4`}>
+      <span className={`${NUMERO} text-[20px] leading-none`}>
         {formatRegistrationNumber(registrationNumber)}
       </span>
       <div className="flex min-w-0 flex-col">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
           <Link
             href={conversacionHref}
-            className={`text-[18px] font-medium ${ENLACE}`}
+            className={`text-[15px] font-medium [overflow-wrap:anywhere] ${ENLACE}`}
           >
             {fullName}
           </Link>
-          <span className={ETIQUETA}>@{cleanHandle}</span>
+          <span className={`${ETIQUETA} break-all`}>@{cleanHandle}</span>
         </div>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
           <span className={ETIQUETA}>{estado.etiqueta}</span>
           <span className={ETIQUETA}>{statusLabel(status, attempts)}</span>
           <span className={ETIQUETA}>{dateFormatter.format(new Date(createdAt))}</span>
         </div>
-        <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-[16px] text-tinta/80 [overflow-wrap:anywhere]">{body}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <p className="mt-2 line-clamp-4 whitespace-pre-wrap text-[14px] text-tinta/80 [overflow-wrap:anywhere]">{body}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {activacion !== null && (
             <ActivarPorInstagram
               registrationId={registrationId}
@@ -146,7 +146,7 @@ export function FilaSinEnviar({
           )}
         </div>
         <div aria-live="polite">
-          {error && <p className={`${ETIQUETA} mt-3`}>{error}</p>}
+          {error && <p className={`${ETIQUETA} mt-2`}>{error}</p>}
         </div>
       </div>
     </li>

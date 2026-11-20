@@ -55,11 +55,11 @@ export function DisposicionConversacion({
 
   return (
     <main
-      className={`grid gap-6 md:min-h-0 md:flex-1 md:gap-10 ${oculta ? "" : "md:grid-cols-[minmax(200px,250px)_minmax(0,1fr)]"}`}
+      className={`grid gap-5 md:min-h-0 md:flex-1 md:gap-8 ${oculta ? "" : "md:grid-cols-[minmax(200px,250px)_minmax(0,1fr)]"}`}
     >
       {!oculta && <div className="flex flex-col gap-4 md:min-h-0 md:overflow-y-auto">{ficha}</div>}
 
-      <div className="flex min-w-0 flex-col gap-4 md:min-h-0">
+      <div className="flex min-w-0 flex-col gap-3 md:min-h-0">
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
           <Link href={adminHref("/registros")} className={`${ENLACE} text-[13px]`}>
             ← Registros

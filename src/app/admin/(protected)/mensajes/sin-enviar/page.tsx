@@ -35,18 +35,18 @@ export default async function SinEnviarPage({ searchParams }: { searchParams: Se
 
   return (
     <TransicionPagina>
-      <main className="grid gap-12">
-        <div className="grid gap-5">
-          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[14px]`}>
+      <main className="grid gap-6">
+        <div className="grid gap-3">
+          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[13px]`}>
             ← Mensajes
           </Link>
           <h1 className={TITULO}>Sin enviar</h1>
         </div>
 
         <section className="grid gap-4">
-          <div className={`flex items-baseline gap-4 border-b ${REGLA} pb-3`}>
-            <span className={`${NUMERO} text-[56px] leading-none`}>{unsent.length}</span>
-            <h2 className={ETIQUETA}>sin enviar</h2>
+          <div className={`flex items-baseline gap-3 border-b ${REGLA} pb-3`}>
+            <span className={`${NUMERO} text-[28px] leading-none md:text-[32px]`}>{unsent.length}</span>
+            <h2 className={`${ETIQUETA} min-w-0`}>sin enviar</h2>
           </div>
           {unsent.length === 0 ? (
             <p className={ETIQUETA}>todo enviado.</p>

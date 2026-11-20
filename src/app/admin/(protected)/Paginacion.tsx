@@ -22,10 +22,10 @@ export function Paginacion({
   return (
     <nav
       aria-label="Paginación"
-      className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-4"
+      className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2 pt-3"
     >
       {hrefAnterior ? (
-        <Link href={hrefAnterior} className={`${ENLACE} text-[14px]`}>
+        <Link href={hrefAnterior} className={`${ENLACE} text-[13px]`}>
           ← Anterior
         </Link>
       ) : (
@@ -35,7 +35,7 @@ export function Paginacion({
         página {pagina} de {totalPaginas} · {total}
       </span>
       {hrefSiguiente ? (
-        <Link href={hrefSiguiente} className={`${ENLACE} text-[14px]`}>
+        <Link href={hrefSiguiente} className={`${ENLACE} text-[13px]`}>
           Siguiente →
         </Link>
       ) : (

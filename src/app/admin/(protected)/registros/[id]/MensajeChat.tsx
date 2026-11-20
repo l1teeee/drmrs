@@ -13,7 +13,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
 });
 
 const BASE_BURBUJA =
-  "whitespace-pre-wrap px-3 py-2 text-[14px] leading-[1.5] [overflow-wrap:anywhere]";
+  "whitespace-pre-wrap px-3 py-1.5 text-[14px] leading-[1.5] [overflow-wrap:anywhere]";
 
 const OUT_STATUS_LABELS: Partial<Record<ConversationMessage["status"], string>> = {
   SENT: "enviado",
@@ -55,15 +55,15 @@ export function MensajeChat({ message }: { message: ConversationMessage }) {
   const isLeft = message.direction === "IN";
 
   return (
-    <li className={`flex items-end gap-3 py-1.5 ${isLeft ? "" : "flex-row-reverse"}`}>
+    <li className={`flex items-end gap-2 py-1 ${isLeft ? "" : "flex-row-reverse"}`}>
       {isLeft ? (
         <span
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-papel text-tinta/50"
+          className="grid size-6 shrink-0 place-items-center rounded-full bg-papel text-tinta/50"
           aria-hidden="true"
         >
           <svg
-            width={16}
-            height={16}
+            width={14}
+            height={14}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -75,15 +75,15 @@ export function MensajeChat({ message }: { message: ConversationMessage }) {
         </span>
       ) : (
         <span
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-azul"
+          className="grid size-6 shrink-0 place-items-center rounded-full bg-azul"
           aria-hidden="true"
         >
-          <Image src="/drmr-isotipo.svg" alt="" width={16} height={15} />
+          <Image src="/drmr-isotipo.svg" alt="" width={14} height={13} />
         </span>
       )}
-      <div className={`grid max-w-[78%] gap-1 ${isLeft ? "" : "justify-items-end"}`}>
+      <div className={`grid max-w-[85%] md:max-w-[70%] gap-1 ${isLeft ? "" : "justify-items-end"}`}>
         <p className={bubbleClass(message)}>{message.body}</p>
-        <span className={ETIQUETA}>{metaLabel(message)}</span>
+        <span className={`${ETIQUETA} [overflow-wrap:anywhere]`}>{metaLabel(message)}</span>
       </div>
     </li>
   );

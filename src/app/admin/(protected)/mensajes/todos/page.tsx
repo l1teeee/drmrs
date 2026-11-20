@@ -35,9 +35,9 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
 
   return (
     <TransicionPagina>
-      <main className="grid gap-12">
-        <div className="grid gap-5">
-          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[14px]`}>
+      <main className="grid gap-6">
+        <div className="grid gap-3">
+          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[13px]`}>
             ← Mensajes
           </Link>
           <h1 className={TITULO}>Todos los chats</h1>
@@ -51,23 +51,23 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
               {pagina.items.map((conversacion) => (
                 <li
                   key={conversacion.registrationId ?? conversacion.contactId}
-                  className={`grid grid-cols-[auto_1fr] gap-x-4 border-b ${FILA} py-5 sm:gap-x-6`}
+                  className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 border-b ${FILA} py-3.5 sm:gap-x-4`}
                 >
-                  <span className={`${NUMERO} text-[28px] leading-none`}>
+                  <span className={`${NUMERO} text-[20px] leading-none`}>
                     {conversacion.registrationNumber === null
                       ? "—"
                       : formatRegistrationNumber(conversacion.registrationNumber)}
                   </span>
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
                       {conversacion.registrationId ? (
                         <>
-                          <span className="text-[18px] font-medium">{conversacion.fullName}</span>
-                          <span className={ETIQUETA}>@{conversacion.instagramHandle}</span>
+                          <span className="text-[15px] font-medium [overflow-wrap:anywhere]">{conversacion.fullName}</span>
+                          <span className={`${ETIQUETA} break-all`}>@{conversacion.instagramHandle}</span>
                         </>
                       ) : (
                         <>
-                          <span className="text-[18px] font-medium">
+                          <span className="text-[15px] font-medium [overflow-wrap:anywhere]">
                             {conversacion.contactUsername
                               ? `@${conversacion.contactUsername}`
                               : (conversacion.contactDisplayName ?? "sin usuario")}
@@ -83,12 +83,12 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
                         {conversacion.total === 1 ? "1 mensaje" : `${conversacion.total} mensajes`}
                       </span>
                     </div>
-                    <p className="mt-2 truncate text-[16px] text-tinta/70">{conversacion.lastBody}</p>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <p className="mt-1 truncate text-[14px] text-tinta/70">{conversacion.lastBody}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
                       {conversacion.registrationId ? (
                         <Link
                           href={adminHref(`/registros/${conversacion.registrationId}`)}
-                          className={`${ENLACE} text-[14px]`}
+                          className={`${ENLACE} text-[13px]`}
                         >
                           Abrir chat
                         </Link>
@@ -97,7 +97,7 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
                           {conversacion.contactUsername && (
                             <Link
                               href={adminHref(`/registros?q=${encodeURIComponent(conversacion.contactUsername)}`)}
-                              className={`${ENLACE} text-[14px]`}
+                              className={`${ENLACE} text-[13px]`}
                             >
                               Buscar registro
                             </Link>

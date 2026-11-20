@@ -13,9 +13,9 @@ export default async function ImportarRegistrosPage() {
 
   return (
     <TransicionPagina>
-      <main className="grid gap-6">
+      <main className="grid gap-4">
         <h1 className={TITULO}>Importar registros</h1>
-        <p className="max-w-[60ch] text-[16px] text-tinta/80">
+        <p className="max-w-[60ch] text-[14px] text-tinta/80">
           Exporta el Google Sheet como CSV y súbelo aquí. Primero verás qué se va a
           importar; nada se guarda hasta confirmar.
         </p>

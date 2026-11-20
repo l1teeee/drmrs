@@ -9,7 +9,7 @@ import { deleteRegistrationChatAction, deleteUnlinkedContactAction } from "./men
 
 type Objetivo = { tipo: "registro"; id: string } | { tipo: "contacto"; id: string };
 
-const TEXT_ACTION = `${ENLACE} text-[14px]`;
+const TEXT_ACTION = `${ENLACE} text-[13px]`;
 
 function errorMessage(error: string): string {
   if (error === "rate_limited") return "Demasiados cambios, espera un momento.";

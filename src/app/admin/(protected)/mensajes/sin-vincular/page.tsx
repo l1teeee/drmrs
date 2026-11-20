@@ -34,47 +34,47 @@ export default async function SinVincularPage({ searchParams }: { searchParams: 
 
   return (
     <TransicionPagina>
-      <main className="grid gap-12">
-        <div className="grid gap-5">
-          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[14px]`}>
+      <main className="grid gap-6">
+        <div className="grid gap-3">
+          <Link href={adminHref("/mensajes")} className={`self-start ${ENLACE} text-[13px]`}>
             ← Mensajes
           </Link>
           <h1 className={TITULO}>Escribieron y no están vinculados</h1>
         </div>
 
         <section className="grid gap-4">
-          <div className={`flex items-baseline gap-4 border-b ${REGLA} pb-3`}>
-            <span className={`${NUMERO} text-[56px] leading-none`}>{unlinked.length}</span>
-            <h2 className={ETIQUETA}>escribieron y no están vinculados</h2>
+          <div className={`flex items-baseline gap-3 border-b ${REGLA} pb-3`}>
+            <span className={`${NUMERO} text-[28px] leading-none md:text-[32px]`}>{unlinked.length}</span>
+            <h2 className={`${ETIQUETA} min-w-0`}>escribieron y no están vinculados</h2>
           </div>
           {unlinked.length === 0 ? (
             <p className={ETIQUETA}>nadie pendiente.</p>
           ) : (
             <ul>
               {paginaContactos.items.map((contact) => (
-                <li key={contact.id} className={`grid gap-1 border-b ${FILA} py-4`}>
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                    <span className="text-[18px] font-medium">
+                <li key={contact.id} className={`grid gap-1 border-b ${FILA} py-3`}>
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-[15px] font-medium [overflow-wrap:anywhere]">
                       {contact.username ? `@${contact.username}` : (contact.displayName ?? "sin usuario")}
                     </span>
                     <span className={ETIQUETA}>{dateFormatter.format(contact.lastInboundAt)}</span>
                   </div>
                   {contact.lastInboundText && (
-                    <p className="truncate text-[16px] text-tinta/60">{contact.lastInboundText}</p>
+                    <p className="min-w-0 truncate text-[14px] text-tinta/60">{contact.lastInboundText}</p>
                   )}
                   {contact.username ? (
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <p className={ETIQUETA}>Vincúlalo desde la conversación del registro.</p>
                       <Link
                         href={adminHref(`/registros?q=${encodeURIComponent(contact.username)}`)}
-                        className={`${ENLACE} text-[14px]`}
+                        className={`${ENLACE} text-[13px]`}
                       >
                         Buscar registro
                       </Link>
                       <BorrarChat objetivo={{ tipo: "contacto", id: contact.id }} />
                     </div>
                   ) : (
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <p className={ETIQUETA}>Busca su registro y vincúlalo desde ahí.</p>
                       <BorrarChat objetivo={{ tipo: "contacto", id: contact.id }} />
                     </div>

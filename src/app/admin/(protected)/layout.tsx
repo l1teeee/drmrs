@@ -12,6 +12,8 @@ import { NavArchivo } from "./NavArchivo";
 import { signOut } from "./actions";
 
 const MARGEN_X = "px-[clamp(16px,4vw,56px)]";
+const ANCHO = "mx-auto w-full max-w-[1200px]";
+const MARGEN_CONTENIDO = "px-[max(clamp(16px,4vw,56px),calc((100%_-_1200px)/2))]";
 
 const NAV_ITEMS = [
   { href: adminHref("/registros"), label: "Registros" },
@@ -28,37 +30,39 @@ export default async function ProtectedLayout({ children }: { children: React.Re
   return (
     <div className="flex min-h-dvh flex-col md:h-dvh md:min-h-0">
       <AutoRefresco />
-      <div className={`${MARGEN_X} shrink-0 pt-[clamp(16px,2.5vw,28px)]`}>
-        <header className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b ${REGLA} pb-4`}>
-          <Link href={adminHref("/registros")} aria-label="drmr, registros">
-            <Image src="/drmr-logo.svg" alt="drmr" width={177} height={72} preload className="h-[26px] w-auto" />
-          </Link>
-          <div className="flex flex-wrap items-baseline justify-end gap-x-5 gap-y-1">
-            <span className="font-mono text-[13px] text-tinta/80">Archivo 001</span>
-            <span className="text-[13px] text-tinta/70">{admin.displayName}</span>
-            <form action={signOut}>
-              <button type="submit" className={`text-[13px] ${ENLACE}`}>
-                Salir
-              </button>
-            </form>
+      <div className={`${MARGEN_X} shrink-0 pt-[clamp(12px,2vw,20px)]`}>
+        <div className={ANCHO}>
+          <header className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-b ${REGLA} pb-3`}>
+            <Link href={adminHref("/registros")} aria-label="drmr, registros">
+              <Image src="/drmr-logo.svg" alt="drmr" width={177} height={72} preload className="h-[22px] w-auto" />
+            </Link>
+            <div className="flex min-w-0 flex-wrap items-baseline justify-end gap-x-4 gap-y-1">
+              <span className="font-mono text-[12px] text-tinta/80">Archivo 001</span>
+              <span className="max-w-[14rem] truncate text-[12px] text-tinta/70">{admin.displayName}</span>
+              <form action={signOut}>
+                <button type="submit" className={`text-[12px] ${ENLACE}`}>
+                  Salir
+                </button>
+              </form>
+            </div>
+          </header>
+
+          <div className="pt-3">
+            <NavArchivo items={NAV_ITEMS} />
           </div>
-        </header>
 
-        <div className="pt-4">
-          <NavArchivo items={NAV_ITEMS} />
+          <div className={`mt-3 border-t ${REGLA}`} />
         </div>
-
-        <div className={`mt-4 border-t ${REGLA}`} />
       </div>
 
       <ContenidoAdmin
-        className={`${MARGEN_X} flex flex-1 flex-col py-[clamp(24px,4vw,48px)] md:min-h-0 md:overflow-y-auto md:overscroll-contain`}
+        className={`${MARGEN_CONTENIDO} flex flex-1 flex-col py-[clamp(16px,2.5vw,28px)] md:min-h-0 md:overflow-y-auto md:overscroll-contain`}
       >
         {children}
       </ContenidoAdmin>
 
-      <footer className={`${MARGEN_X} shrink-0 pb-[clamp(16px,2.5vw,28px)]`}>
-        <div className={`border-t ${REGLA} pt-4 text-[13px]`}>
+      <footer className={`${MARGEN_X} shrink-0 pb-[clamp(12px,2vw,20px)]`}>
+        <div className={`${ANCHO} border-t ${REGLA} pt-3 text-[12px]`}>
           <p>
             <b className="font-semibold">drmr™</b> · Querétaro, MX
           </p>

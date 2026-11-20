@@ -174,7 +174,7 @@ export default async function ActividadPage({
 
   return (
     <TransicionPagina>
-      <main className="grid gap-6">
+      <main className="grid gap-4">
         <h1 className={TITULO}>Actividad</h1>
 
         <ul className={`border-t ${FILA}`}>
@@ -183,7 +183,7 @@ export default async function ActividadPage({
             return (
             <li
               key={entry.id}
-              className={`grid gap-1 border-b ${FILA} py-3 font-mono text-[13px] sm:grid-cols-[10rem_12rem_1fr] sm:gap-x-6`}
+              className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 border-b ${FILA} py-2.5 font-mono text-[12px] sm:grid-cols-[9rem_10rem_minmax(0,1fr)] sm:gap-x-6`}
             >
               <span className="text-tinta/60">
                 {dateFormatter.format(entry.occurredAt)}
@@ -191,7 +191,7 @@ export default async function ActividadPage({
               <span className="min-w-0 break-words">
                 {entry.actorName ?? "Sistema"}
               </span>
-              <div className="grid min-w-0 gap-1">
+              <div className="col-span-2 grid min-w-0 gap-0.5 sm:col-span-1">
                 <span className="break-words">{formatAuditAction(entry)}</span>
                 {detalle === null ? null : (
                   <span className="break-words text-tinta/60">
