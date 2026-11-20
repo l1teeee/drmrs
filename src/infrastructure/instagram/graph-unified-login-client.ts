@@ -24,7 +24,6 @@ export class GraphUnifiedLoginClient implements UnifiedLoginClient {
       response_type: "code",
       override_default_response_type: "true",
       state,
-      prompt: "login",
     });
     return `https://www.facebook.com/dialog/oauth?${params}`;
   }
