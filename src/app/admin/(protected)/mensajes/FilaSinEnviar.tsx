@@ -104,7 +104,7 @@ export function FilaSinEnviar({
           <span className={ETIQUETA}>{statusLabel(status, attempts)}</span>
           <span className={ETIQUETA}>{dateFormatter.format(new Date(createdAt))}</span>
         </div>
-        <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-[16px] text-tinta/80">{body}</p>
+        <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-[16px] text-tinta/80 [overflow-wrap:anywhere]">{body}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
           {activacion !== null && (
             <ActivarPorInstagram

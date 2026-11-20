@@ -10,6 +10,7 @@ import {
   listUnlinkedContacts,
   renderActivationTexts,
 } from "@/application/messaging/admin-messages";
+import { TransicionPagina } from "@/components/TransicionPagina";
 import { TINTA_MAQUINA } from "@/components/Maquina";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
@@ -22,6 +23,7 @@ import { ActivarPorInstagram } from "../../ActivarPorInstagram";
 import { estadoInstagram } from "../../estado-instagram";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
+import { HiloMensajes } from "./HiloMensajes";
 import { VincularContacto } from "./VincularContacto";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
@@ -87,92 +89,101 @@ export default async function ConversacionPage({
   }
 
   return (
-    <main className="grid gap-10 md:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] md:gap-14">
-      <div className="flex flex-col gap-5">
-        <Link
-          href={adminHref("/registros")}
-          className={`self-start text-[14px] ${ENLACE}`}
-        >
-          ← Registros
-        </Link>
-
-        <div className="relative flex-1 overflow-hidden bg-papel">
-          <Image
-            src="/textura-papel.jpg"
-            alt=""
-            fill
-            sizes="(min-width: 768px) 300px, 100vw"
-            className="object-cover"
-          />
-          <div
-            className={`relative break-words p-6 font-mono text-[13px] leading-[1.7] text-tinta rotate-[-0.4deg] md:p-8 md:text-[14px] ${TINTA_MAQUINA}`}
+    <TransicionPagina>
+      <main className="grid gap-10 md:min-h-0 md:flex-1 md:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] md:gap-14">
+        <div className="flex flex-col gap-5 md:min-h-0 md:overflow-y-auto">
+          <Link
+            href={adminHref("/registros")}
+            className={`self-start text-[14px] ${ENLACE}`}
           >
-            <p>expediente {formatRegistrationNumber(registration.registrationNumber)}</p>
-            <p>nombre: {registration.fullName.toLowerCase()}</p>
-            <p>instagram: @{handle}</p>
-            <p>talla: {SIZE_LABELS[piece.size].toLowerCase()}</p>
-            <p>pieza: {PIECE_STATUS_LABELS[piece.pieceStatus]}</p>
-            <p>vínculo: {linkLabel(registration.linkedBy, registration.linkCode)}</p>
-            <p>instagram: {estado.etiqueta.toLowerCase()}</p>
+            ← Registros
+          </Link>
+
+          <div className="relative overflow-hidden bg-papel">
+            <Image
+              src="/textura-papel.jpg"
+              alt=""
+              fill
+              sizes="(min-width: 768px) 300px, 100vw"
+              className="object-cover"
+            />
+            <div
+              className={`relative break-words p-6 font-mono text-[13px] leading-[1.7] text-tinta rotate-[-0.4deg] md:p-8 md:text-[14px] ${TINTA_MAQUINA}`}
+            >
+              <p>expediente {formatRegistrationNumber(registration.registrationNumber)}</p>
+              <p>nombre: {registration.fullName.toLowerCase()}</p>
+              <p>instagram: @{handle}</p>
+              <p>talla: {SIZE_LABELS[piece.size].toLowerCase()}</p>
+              <p>pieza: {PIECE_STATUS_LABELS[piece.pieceStatus]}</p>
+              <p>vínculo: {linkLabel(registration.linkedBy, registration.linkCode)}</p>
+              <p>instagram: {estado.etiqueta.toLowerCase()}</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid content-start gap-8">
-        <h1 tabIndex={-1} className={`${TITULO} outline-none`}>
-          Conversación
-        </h1>
+        <div className="flex min-w-0 flex-col gap-6 md:min-h-0">
+          <div className="grid shrink-0 gap-6">
+            <h1 tabIndex={-1} className={`${TITULO} outline-none`}>
+              Conversación
+            </h1>
 
-        <PistaPieza registrationId={registration.id} current={piece.pieceStatus} />
+            <PistaPieza registrationId={registration.id} current={piece.pieceStatus} />
+          </div>
 
-        {messages.length === 0 ? (
-          <p className={ETIQUETA}>sin mensajes todavía.</p>
-        ) : (
-          <ul className={`border-t ${FILA}`}>
-            {messages.map((message) => (
-              <li
-                key={message.id}
-                className={`grid gap-1 border-b ${FILA} py-4 ${
-                  message.direction === "IN" ? "pl-0" : "pl-6 md:pl-12"
-                }`}
-              >
-                <p className={ETIQUETA}>{messageLabel(message)}</p>
-                <p className="whitespace-pre-wrap text-[16px]">{message.body}</p>
-              </li>
-            ))}
-          </ul>
-        )}
+          {messages.length === 0 ? (
+            <p className={`${ETIQUETA} md:flex-1`}>sin mensajes todavía.</p>
+          ) : (
+            <HiloMensajes
+              count={messages.length}
+              className={`max-h-[60dvh] overflow-y-auto overscroll-contain border-t ${FILA} focus-visible:outline focus-visible:outline-1 focus-visible:outline-azul md:max-h-none md:min-h-0 md:flex-1`}
+            >
+              <ul>
+                {messages.map((message) => (
+                  <li
+                    key={message.id}
+                    className={`grid gap-1 border-b ${FILA} py-4 ${
+                      message.direction === "IN" ? "pl-0" : "pl-6 md:pl-12"
+                    }`}
+                  >
+                    <p className={ETIQUETA}>{messageLabel(message)}</p>
+                    <p className="whitespace-pre-wrap text-[16px] [overflow-wrap:anywhere]">{message.body}</p>
+                  </li>
+                ))}
+              </ul>
+            </HiloMensajes>
+          )}
 
-        <div className={`grid gap-8 border-t ${REGLA} pt-6`}>
-          {activationText !== null && (
-            <div className="grid gap-3">
-              <p className={ETIQUETA}>
-                Inactivo. Envíale la activación; cuando responda, drmr manda solo lo pendiente.
-              </p>
-              <ActivarPorInstagram
+          <div className={`grid shrink-0 gap-8 border-t ${REGLA} pt-6 md:max-h-[45dvh] md:overflow-y-auto`}>
+            {activationText !== null && (
+              <div className="grid gap-3">
+                <p className={ETIQUETA}>
+                  Inactivo. Envíale la activación; cuando responda, drmr manda solo lo pendiente.
+                </p>
+                <ActivarPorInstagram
+                  registrationId={registration.id}
+                  fullName={registration.fullName}
+                  username={registration.instagramHandle}
+                  text={activationText}
+                  activationSentAt={registration.activationSentAt?.toISOString() ?? null}
+                />
+              </div>
+            )}
+            <EnviarMensaje registrationId={registration.id} />
+
+            {registration.linkedBy === null && unlinked.length > 0 && (
+              <VincularContacto
                 registrationId={registration.id}
-                fullName={registration.fullName}
-                username={registration.instagramHandle}
-                text={activationText}
-                activationSentAt={registration.activationSentAt?.toISOString() ?? null}
+                contacts={unlinked.map((contact) => ({
+                  id: contact.id,
+                  username: contact.username,
+                  displayName: contact.displayName,
+                  lastInboundAt: contact.lastInboundAt.toISOString(),
+                }))}
               />
-            </div>
-          )}
-          <EnviarMensaje registrationId={registration.id} />
-
-          {registration.linkedBy === null && unlinked.length > 0 && (
-            <VincularContacto
-              registrationId={registration.id}
-              contacts={unlinked.map((contact) => ({
-                id: contact.id,
-                username: contact.username,
-                displayName: contact.displayName,
-                lastInboundAt: contact.lastInboundAt.toISOString(),
-              }))}
-            />
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </TransicionPagina>
   );
 }

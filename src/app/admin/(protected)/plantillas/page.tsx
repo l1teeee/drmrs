@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 
 import { listMessageTemplates } from "@/application/admin-registros/admin-registros";
+import { TransicionPagina } from "@/components/TransicionPagina";
 import { TEMPLATE_KEYS, type TemplateKey } from "@/domain/messaging/message-template";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
@@ -34,19 +35,21 @@ export default async function PlantillasPage() {
   );
 
   return (
-    <main className="grid gap-8">
-      <h1 className={TITULO}>Plantillas de Instagram</h1>
-      <div className="grid gap-8">
-        {ordered.map((template) => (
-          <EditorPlantilla
-            key={template.key}
-            templateKey={template.key}
-            title={TEMPLATE_TITLES[template.key]}
-            initialBody={template.body}
-            updatedAtLabel={dateFormatter.format(template.updatedAt)}
-          />
-        ))}
-      </div>
-    </main>
+    <TransicionPagina>
+      <main className="grid gap-8">
+        <h1 className={TITULO}>Plantillas de Instagram</h1>
+        <div className="grid gap-8">
+          {ordered.map((template) => (
+            <EditorPlantilla
+              key={template.key}
+              templateKey={template.key}
+              title={TEMPLATE_TITLES[template.key]}
+              initialBody={template.body}
+              updatedAtLabel={dateFormatter.format(template.updatedAt)}
+            />
+          ))}
+        </div>
+      </main>
+    </TransicionPagina>
   );
 }

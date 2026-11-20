@@ -3,6 +3,7 @@ import { connection } from "next/server";
 
 import type { AuditEntry } from "@/application/admin-registros/admin-registro-store";
 import { listAuditPage } from "@/application/admin-registros/admin-registros";
+import { TransicionPagina } from "@/components/TransicionPagina";
 import { PIECE_STATUS_LABELS } from "@/domain/registration/piece-status";
 import type { PieceStatus } from "@/domain/registration/registration";
 import { adminHref } from "@/infrastructure/admin/admin-path";
@@ -81,38 +82,40 @@ export default async function ActividadPage({
   const lastEntry = entries[entries.length - 1];
 
   return (
-    <main className="grid gap-6">
-      <h1 className={TITULO}>Actividad</h1>
+    <TransicionPagina>
+      <main className="grid gap-6">
+        <h1 className={TITULO}>Actividad</h1>
 
-      <ul className={`border-t ${FILA}`}>
-        {entries.map((entry) => (
-          <li
-            key={entry.id}
-            className={`grid gap-1 border-b ${FILA} py-3 font-mono text-[13px] sm:grid-cols-[10rem_12rem_1fr] sm:gap-x-6`}
-          >
-            <span className="text-tinta/60">
-              {dateFormatter.format(entry.occurredAt)}
-            </span>
-            <span className="min-w-0 break-words">
-              {entry.actorName ?? "Sistema"}
-            </span>
-            <span className="min-w-0 break-words">
-              {formatAuditAction(entry)}
-            </span>
-          </li>
-        ))}
-      </ul>
+        <ul className={`border-t ${FILA}`}>
+          {entries.map((entry) => (
+            <li
+              key={entry.id}
+              className={`grid gap-1 border-b ${FILA} py-3 font-mono text-[13px] sm:grid-cols-[10rem_12rem_1fr] sm:gap-x-6`}
+            >
+              <span className="text-tinta/60">
+                {dateFormatter.format(entry.occurredAt)}
+              </span>
+              <span className="min-w-0 break-words">
+                {entry.actorName ?? "Sistema"}
+              </span>
+              <span className="min-w-0 break-words">
+                {formatAuditAction(entry)}
+              </span>
+            </li>
+          ))}
+        </ul>
 
-      {entries.length === 50 && lastEntry && (
-        <div>
-          <Link
-            href={adminHref(`/actividad?before=${lastEntry.id}`)}
-            className={`${ENLACE} text-[14px]`}
-          >
-            Más antiguos
-          </Link>
-        </div>
-      )}
-    </main>
+        {entries.length === 50 && lastEntry && (
+          <div>
+            <Link
+              href={adminHref(`/actividad?before=${lastEntry.id}`)}
+              className={`${ENLACE} text-[14px]`}
+            >
+              Más antiguos
+            </Link>
+          </div>
+        )}
+      </main>
+    </TransicionPagina>
   );
 }
