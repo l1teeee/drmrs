@@ -3,13 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { esDispositivoMovil, urlPerfilInstagram } from "@/lib/instagram/enlace-chat";
+import { urlPerfilInstagram } from "@/lib/instagram/enlace-chat";
+import { useEsMovil } from "@/lib/instagram/use-es-movil";
 
 import { ENLACE, ETIQUETA } from "../ui";
 
 import { recordActivationSentAction } from "./mensajes/actions";
 
-type Feedback = "copied" | "copied-desktop" | "failed" | null;
+type Feedback = "copied" | "failed" | null;
 
 interface ActivarPorInstagramProps {
   registrationId: string;
@@ -46,27 +47,22 @@ export function ActivarPorInstagram({
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [error, setError] = useState<string | null>(null);
+  const movil = useEsMovil();
 
   const cleanUsername = username.replace(/^@/, "");
 
-  async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
-    const copia = navigator.clipboard.writeText(text);
-    const escritorio = !esDispositivoMovil();
-    if (escritorio) {
-      event.preventDefault();
-      window.open(urlPerfilInstagram(cleanUsername), "_blank", "noopener,noreferrer");
-    }
+  async function handleClick() {
     let result: Feedback;
     try {
-      await copia;
-      result = escritorio ? "copied-desktop" : "copied";
+      await navigator.clipboard.writeText(text);
+      result = "copied";
     } catch {
       result = "failed";
     }
     setFeedback(result);
     setTimeout(() => {
       setFeedback(null);
-    }, result === "copied-desktop" ? 8000 : 2000);
+    }, result === "copied" ? 8000 : 2000);
   }
 
   function handleMarkSent() {
@@ -85,18 +81,13 @@ export function ActivarPorInstagram({
     });
   }
 
-  const label =
-    feedback === "copied"
-      ? "Copiado"
-      : feedback === "failed"
-        ? "No se pudo copiar"
-        : "Activar por Instagram";
+  const label = feedback === "failed" ? "No se pudo copiar" : "Activar por Instagram";
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
       <a
-        href={`https://ig.me/m/${encodeURIComponent(cleanUsername)}`}
-        target="_blank"
+        href={urlPerfilInstagram(cleanUsername)}
+        target={movil ? undefined : "_blank"}
         rel="noopener noreferrer"
         onClick={handleClick}
         aria-live="polite"
@@ -111,9 +102,9 @@ export function ActivarPorInstagram({
           </>
         )}
       </a>
-      {feedback === "copied-desktop" && (
+      {feedback === "copied" && (
         <span aria-live="polite" className={ETIQUETA}>
-          Copiado. En el perfil abre ⋯ › Enviar mensaje y pega.
+          Copiado. En el perfil pulsa Enviar mensaje (o ⋯ › Enviar mensaje) y pega.
         </span>
       )}
       <button

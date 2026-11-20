@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { esDispositivoMovil, urlPerfilInstagram, usuarioDesdeEnlaceIgMe } from "@/lib/instagram/enlace-chat";
+import { urlPerfilInstagram, usuarioDesdeEnlaceIgMe } from "@/lib/instagram/enlace-chat";
+import { useEsMovil } from "@/lib/instagram/use-es-movil";
 import { enlaceWhatsappRegistro } from "@/lib/registro/enlaces";
 import { formatearNumeroRegistro, formatearTelefono } from "@/lib/registro/formato";
 import { archivoBlack, FUENTES_CICLO } from "./fuentes-numero";
@@ -41,7 +42,9 @@ export function ConfirmacionRegistro({
   codigo,
   onCorregir,
 }: ConfirmacionRegistroProps) {
-  const [copiado, setCopiado] = useState<"movil" | "escritorio" | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const movil = useEsMovil();
+  const usuarioInstagram = instagramLink ? usuarioDesdeEnlaceIgMe(instagramLink) : null;
   const escena = useRef<HTMLDivElement>(null);
   const tinta = useRef<HTMLDivElement>(null);
   const grano = useRef<HTMLDivElement>(null);
@@ -49,19 +52,12 @@ export function ConfirmacionRegistro({
   const cifra = useRef<HTMLParagraphElement>(null);
   const trazo = useRef<SVGPathElement>(null);
 
-  async function copiarMensaje(event: React.MouseEvent<HTMLAnchorElement>) {
-    const copia = navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
-    const escritorio = !esDispositivoMovil();
-    const usuario = instagramLink ? usuarioDesdeEnlaceIgMe(instagramLink) : null;
-    if (escritorio && usuario !== null) {
-      event.preventDefault();
-      window.open(urlPerfilInstagram(usuario), "_blank", "noopener,noreferrer");
-    }
+  async function copiarMensaje() {
     try {
-      await copia;
-      setCopiado(escritorio ? "escritorio" : "movil");
+      await navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
+      setCopiado(true);
     } catch {
-      setCopiado(null);
+      setCopiado(false);
     }
   }
 
@@ -222,8 +218,8 @@ export function ConfirmacionRegistro({
         {instagramLink && (
           <div data-aparece className="mt-6 flex flex-col items-center gap-2">
             <a
-              href={instagramLink}
-              target="_blank"
+              href={usuarioInstagram ? urlPerfilInstagram(usuarioInstagram) : instagramLink}
+              target={movil ? undefined : "_blank"}
               rel="noopener noreferrer"
               onClick={copiarMensaje}
               className="inline-flex items-center justify-center border border-white px-6 py-4 text-[16px] font-medium text-white transition-colors duration-300 hover:bg-white hover:text-azul focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none"
@@ -231,11 +227,7 @@ export function ConfirmacionRegistro({
               Enviar mensaje por Instagram
             </a>
             <p aria-live="polite" className="min-h-[1.25rem] text-[13px] text-white/70">
-              {copiado === "escritorio"
-                ? "Copiado. Pulsa Enviar mensaje y pégalo."
-                : copiado === "movil"
-                  ? "Copiado. Pégalo y envíalo."
-                  : ""}
+              {copiado ? "Copiado. En nuestro perfil pulsa Enviar mensaje y pégalo." : ""}
             </p>
           </div>
         )}
