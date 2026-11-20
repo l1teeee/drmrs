@@ -2,12 +2,18 @@ import Link from "next/link";
 import { connection } from "next/server";
 
 import { listRegistros } from "@/application/admin-registros/admin-registros";
+import {
+  listWindowStates,
+  type RegistrationWindowState,
+  renderActivationTexts,
+} from "@/application/messaging/admin-messages";
 import { type ListFilters, listFiltersSchema } from "@/contracts/admin-registros";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { PIECE_STATUSES, SIZES } from "@/domain/registration/registration";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
+import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 
 import {
   BotonArchivo,
@@ -19,7 +25,8 @@ import {
   REGLA,
   TITULO,
 } from "../../ui";
-import { FilaRegistro } from "./FilaRegistro";
+import { estadoInstagram } from "../estado-instagram";
+import { FilaRegistro, type FilaRegistroProps } from "./FilaRegistro";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -41,6 +48,20 @@ function parseFilters(raw: Record<string, string | string[] | undefined>): ListF
   return parsed.success ? parsed.data : {};
 }
 
+function instagramProps(
+  registrationId: string,
+  windowStates: Map<string, RegistrationWindowState>,
+  activationTexts: Map<string, string>,
+  now: Date,
+): Pick<FilaRegistroProps, "estado" | "activacion"> {
+  const state = windowStates.get(registrationId);
+  const estado = estadoInstagram(state?.lastInboundAt ?? null, now);
+  if (estado.activo) return { estado, activacion: null };
+  const text = activationTexts.get(registrationId);
+  if (text === undefined) throw new Error("Activation text missing");
+  return { estado, activacion: { text, sentAt: state?.activationSentAt?.toISOString() ?? null } };
+}
+
 export default async function RegistrosPage({
   searchParams,
 }: {
@@ -52,6 +73,10 @@ export default async function RegistrosPage({
   const resolvedParams = await searchParams;
   const filters = parseFilters(resolvedParams);
   const registros = await listRegistros(filters, adminRegistrosDependencies());
+  const messagesDeps = adminMessagesDependencies();
+  const windowStates = await listWindowStates(registros.map((row) => row.id), messagesDeps);
+  const activationTexts = await renderActivationTexts(registros, messagesDeps);
+  const now = new Date();
   const hasFilters = Boolean(filters.q || filters.estado || filters.talla);
 
   const statusCounts = PIECE_STATUSES.map((status) => ({
@@ -169,6 +194,7 @@ export default async function RegistrosPage({
               size={row.size}
               pieceStatus={row.pieceStatus}
               expedienteUrl={row.expedienteUrl}
+              {...instagramProps(row.id, windowStates, activationTexts, now)}
             />
           ))}
         </ul>

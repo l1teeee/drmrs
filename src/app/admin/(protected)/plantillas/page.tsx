@@ -12,6 +12,7 @@ const TEMPLATE_TITLES: Record<TemplateKey, string> = {
   BIENVENIDA: "Bienvenida",
   CAMBIO_ESTADO: "Cambio de estado",
   RECORDATORIO_DROP: "Recordatorio del drop",
+  ACTIVACION: "Activación",
 };
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {

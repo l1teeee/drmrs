@@ -7,12 +7,14 @@ import { useState, useTransition } from "react";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 
 import { ENLACE, ETIQUETA, FILA, NUMERO } from "../../ui";
-import { EnviarPorInstagram } from "../EnviarPorInstagram";
+import { ActivarPorInstagram } from "../ActivarPorInstagram";
+import type { EstadoInstagram } from "../estado-instagram";
 
-import { discardMessageAction, markSentManuallyAction } from "./actions";
+import { discardMessageAction } from "./actions";
 
 export interface FilaSinEnviarProps {
   id: string;
+  registrationId: string;
   registrationNumber: number;
   fullName: string;
   instagramHandle: string;
@@ -21,6 +23,8 @@ export interface FilaSinEnviarProps {
   attempts: number;
   createdAt: string;
   conversacionHref: string;
+  estado: EstadoInstagram;
+  activacion: { text: string; sentAt: string | null } | null;
 }
 
 const TEXT_ACTION = `${ENLACE} text-[14px]`;
@@ -48,6 +52,7 @@ function errorMessage(error: string): string {
 
 export function FilaSinEnviar({
   id,
+  registrationId,
   registrationNumber,
   fullName,
   instagramHandle,
@@ -56,6 +61,8 @@ export function FilaSinEnviar({
   attempts,
   createdAt,
   conversacionHref,
+  estado,
+  activacion,
 }: FilaSinEnviarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -63,18 +70,6 @@ export function FilaSinEnviar({
   const [error, setError] = useState<string | null>(null);
 
   const cleanHandle = instagramHandle.replace(/^@/, "");
-
-  function handleMarkSent() {
-    setError(null);
-    startTransition(async () => {
-      const result = await markSentManuallyAction({ messageId: id });
-      if (!result.ok) {
-        setError(errorMessage(result.error));
-        return;
-      }
-      router.refresh();
-    });
-  }
 
   function handleDiscard() {
     setError(null);
@@ -105,21 +100,24 @@ export function FilaSinEnviar({
           <span className={ETIQUETA}>@{cleanHandle}</span>
         </div>
         <div className="mt-1 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span className={ETIQUETA}>{estado.etiqueta}</span>
           <span className={ETIQUETA}>{statusLabel(status, attempts)}</span>
           <span className={ETIQUETA}>{dateFormatter.format(new Date(createdAt))}</span>
         </div>
         <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-[16px] text-tinta/80">{body}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <EnviarPorInstagram username={instagramHandle} text={body} />
-          <button
-            type="button"
-            disabled={isPending}
-            onClick={handleMarkSent}
-            aria-label={`Ya lo envié a ${fullName}`}
-            className={TEXT_ACTION}
-          >
-            {isPending ? "Marcando…" : "Ya lo envié"}
-          </button>
+          {activacion !== null && (
+            <ActivarPorInstagram
+              registrationId={registrationId}
+              fullName={fullName}
+              username={instagramHandle}
+              text={activacion.text}
+              activationSentAt={activacion.sentAt}
+            />
+          )}
+          {activacion === null && status !== "FAILED" && (
+            <span className={ETIQUETA}>Se envía solo por Instagram.</span>
+          )}
           {!confirming ? (
             <button
               type="button"

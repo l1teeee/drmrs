@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
+import { listRegistros } from "@/application/admin-registros/admin-registros";
 import {
   listUnlinkedContacts,
   listUnsentMessages,
+  renderActivationTexts,
 } from "@/application/messaging/admin-messages";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
@@ -12,6 +14,7 @@ import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-mess
 import { scheduleMessageDelivery } from "@/infrastructure/messaging/schedule-message-delivery";
 
 import { ENLACE, ETIQUETA, FILA, NUMERO, REGLA, TITULO } from "../../ui";
+import { estadoInstagram } from "../estado-instagram";
 
 import { FilaSinEnviar } from "./FilaSinEnviar";
 
@@ -44,6 +47,9 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
   const deps = adminMessagesDependencies();
   const unsent = await listUnsentMessages(deps);
   const unlinked = await listUnlinkedContacts(deps);
+  const registros = await listRegistros({}, deps.registros);
+  const activationTexts = await renderActivationTexts(registros, deps);
+  const now = new Date();
 
   return (
     <main className="grid gap-12">
@@ -92,20 +98,31 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
           <p className={ETIQUETA}>todo enviado.</p>
         ) : (
           <ul>
-            {unsent.map((message) => (
-              <FilaSinEnviar
-                key={message.id}
-                id={message.id}
-                registrationNumber={message.registrationNumber}
-                fullName={message.fullName}
-                instagramHandle={message.instagramHandle}
-                status={message.status}
-                body={message.body}
-                attempts={message.attempts}
-                createdAt={message.createdAt.toISOString()}
-                conversacionHref={adminHref("/registros/" + message.registrationId)}
-              />
-            ))}
+            {unsent.map((message) => {
+              const estado = estadoInstagram(message.lastInboundAt, now);
+              const text = activationTexts.get(message.registrationId);
+              if (text === undefined) throw new Error("Activation text missing");
+              const activacion = estado.activo
+                ? null
+                : { text, sentAt: message.activationSentAt?.toISOString() ?? null };
+              return (
+                <FilaSinEnviar
+                  key={message.id}
+                  id={message.id}
+                  registrationId={message.registrationId}
+                  estado={estado}
+                  activacion={activacion}
+                  registrationNumber={message.registrationNumber}
+                  fullName={message.fullName}
+                  instagramHandle={message.instagramHandle}
+                  status={message.status}
+                  body={message.body}
+                  attempts={message.attempts}
+                  createdAt={message.createdAt.toISOString()}
+                  conversacionHref={adminHref("/registros/" + message.registrationId)}
+                />
+              );
+            })}
           </ul>
         )}
       </section>

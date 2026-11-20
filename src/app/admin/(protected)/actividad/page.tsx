@@ -23,6 +23,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
 
 const STATIC_ACTION_LABELS: Record<string, string> = {
   EXPEDIENTE_LINK_REGENERATED: "Nuevo link de expediente",
+  INSTAGRAM_ACTIVATION_SENT: "Activación enviada por Instagram",
   MESSAGE_TEMPLATE_UPDATED: "Plantilla editada",
   REGISTRATIONS_EXPORTED: "Exportación CSV",
   REGISTRATIONS_IMPORTED: "Importación CSV",

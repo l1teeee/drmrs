@@ -7,6 +7,7 @@ import type {
   ConversationMessage,
   EnqueueMessageResult,
   QueuedMessageStatus,
+  RegistrationWindowState,
   UnlinkedContact,
   UnsentMessage,
 } from "@/application/messaging/admin-messages";
@@ -33,11 +34,7 @@ async function insertAudit(
   );
 }
 
-async function mutatePendingMessage(
-  adminId: string,
-  messageId: string,
-  operation: "mark_sent" | "discard",
-): Promise<AdminMessageMutationKind> {
+async function discardPendingMessage(adminId: string, messageId: string): Promise<AdminMessageMutationKind> {
   return inTransaction(getPool(), transactionSettings, async (client) => {
     const result = await client.query<{
       registration_id: string;
@@ -57,18 +54,8 @@ async function mutatePendingMessage(
       return "invalid_state";
     }
     if (message.locked) return "conflict";
-    if (operation === "mark_sent") {
-      await client.query(
-        `UPDATE messages SET status = 'SENT_MANUALLY', sent_at = now(),
-                locked_until = NULL, next_attempt_at = NULL
-          WHERE id = $1`,
-        [messageId],
-      );
-      await insertAudit(client, adminId, message.registration_id, "INSTAGRAM_MESSAGE_SENT_MANUALLY");
-    } else {
-      await client.query("DELETE FROM messages WHERE id = $1", [messageId]);
-      await insertAudit(client, adminId, message.registration_id, "INSTAGRAM_MESSAGE_DISCARDED");
-    }
+    await client.query("DELETE FROM messages WHERE id = $1", [messageId]);
+    await insertAudit(client, adminId, message.registration_id, "INSTAGRAM_MESSAGE_DISCARDED");
     return "done";
   });
 }
@@ -112,12 +99,32 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     });
   }
 
-  markSentManually(adminId: string, messageId: string): Promise<AdminMessageMutationKind> {
-    return mutatePendingMessage(adminId, messageId, "mark_sent");
+  discardMessage(adminId: string, messageId: string): Promise<AdminMessageMutationKind> {
+    return discardPendingMessage(adminId, messageId);
   }
 
-  discardMessage(adminId: string, messageId: string): Promise<AdminMessageMutationKind> {
-    return mutatePendingMessage(adminId, messageId, "discard");
+  async listWindowStates(registrationIds: string[]): Promise<RegistrationWindowState[]> {
+    if (registrationIds.length === 0) return [];
+    const result = await getPool().query<RegistrationWindowState>(
+      `SELECT r.id AS "registrationId", c.last_inbound_at AS "lastInboundAt",
+              r.instagram_activation_sent_at AS "activationSentAt"
+         FROM registrations r LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
+        WHERE r.id = ANY($1::uuid[])`,
+      [registrationIds],
+    );
+    return result.rows;
+  }
+
+  recordActivationSent(adminId: string, registrationId: string): Promise<"done" | "not_found"> {
+    return inTransaction(getPool(), transactionSettings, async (client) => {
+      const result = await client.query(
+        "UPDATE registrations SET instagram_activation_sent_at = now() WHERE id = $1",
+        [registrationId],
+      );
+      if (result.rowCount !== 1) return "not_found";
+      await insertAudit(client, adminId, registrationId, "INSTAGRAM_ACTIVATION_SENT");
+      return "done";
+    });
   }
 
   linkContactManually(adminId: string, registrationId: string, contactId: string): Promise<AdminMessageMutationKind> {
@@ -175,10 +182,10 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
       username: string | null;
       last_inbound_at: Date | null;
       ig_link_code: string | null;
-      now: Date;
+      instagram_activation_sent_at: Date | null;
     }>(
       `SELECT r.id, r.registration_number, r.full_name, r.instagram_handle, r.contact_linked_by,
-              c.username, c.last_inbound_at, r.ig_link_code, now() AS now
+              c.username, c.last_inbound_at, r.ig_link_code, r.instagram_activation_sent_at
          FROM registrations r LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
         WHERE r.id = $1`,
       [registrationId],
@@ -200,7 +207,8 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
         instagramHandle: registration.instagram_handle,
         linkedBy: registration.contact_linked_by,
         contactUsername: registration.username,
-        windowOpen: isMessagingWindowOpen(registration.last_inbound_at, registration.now),
+        lastInboundAt: registration.last_inbound_at,
+        activationSentAt: registration.instagram_activation_sent_at,
         linkCode: registration.ig_link_code,
       },
       messages: messages.rows,
@@ -211,8 +219,11 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     const result = await getPool().query<UnsentMessage>(
       `SELECT m.id, m.registration_id AS "registrationId", r.registration_number AS "registrationNumber",
               r.full_name AS "fullName", r.instagram_handle AS "instagramHandle",
-              m.status, m.body, m.attempts, m.last_error AS "lastError", m.created_at AS "createdAt"
+              m.status, m.body, m.attempts, m.last_error AS "lastError", m.created_at AS "createdAt",
+              c.last_inbound_at AS "lastInboundAt",
+              r.instagram_activation_sent_at AS "activationSentAt"
          FROM messages m JOIN registrations r ON r.id = m.registration_id
+         LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
         WHERE m.direction = 'OUT'
           AND (m.status IN ('FAILED', 'WAITING_CONTACT', 'WAITING_WINDOW')
                OR (m.status = 'QUEUED' AND m.attempts > 0))

@@ -12,7 +12,7 @@ const SELECT = `${CAMPO} max-w-md disabled:cursor-not-allowed disabled:opacity-4
 const TEXTAREA = `${CAMPO_AREA} disabled:cursor-not-allowed disabled:opacity-40`;
 const OPTION = "bg-papel text-tinta";
 
-type Choice = TemplateKey | "LIBRE";
+type Choice = Exclude<TemplateKey, "ACTIVACION"> | "LIBRE";
 
 const CHOICE_PREVIEWS: Record<Choice, string> = {
   BIENVENIDA: "Se enviará la plantilla Bienvenida con los datos de este registro.",

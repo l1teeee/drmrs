@@ -1,4 +1,8 @@
-import type { AdminRegistrosDependencies } from "@/application/admin-registros/admin-registros";
+import type { AdminRegistroRow } from "@/application/admin-registros/admin-registro-store";
+import {
+  expedienteUrl,
+  type AdminRegistrosDependencies,
+} from "@/application/admin-registros/admin-registros";
 import { buildTemplateValues } from "@/application/admin-registros/template-values";
 import type { RateLimitCheck } from "@/application/ports/rate-limit";
 import { renderMessageTemplate, type TemplateKey } from "@/domain/messaging/message-template";
@@ -31,7 +35,8 @@ export interface Conversation {
     instagramHandle: string;
     linkedBy: string | null;
     contactUsername: string | null;
-    windowOpen: boolean;
+    lastInboundAt: Date | null;
+    activationSentAt: Date | null;
     linkCode: string | null;
   };
   messages: ConversationMessage[];
@@ -48,6 +53,14 @@ export interface UnsentMessage {
   attempts: number;
   lastError: string | null;
   createdAt: Date;
+  lastInboundAt: Date | null;
+  activationSentAt: Date | null;
+}
+
+export interface RegistrationWindowState {
+  registrationId: string;
+  lastInboundAt: Date | null;
+  activationSentAt: Date | null;
 }
 
 export interface UnlinkedContact {
@@ -65,7 +78,8 @@ export interface AdminMessageStore {
     text: string,
     templateKey: TemplateKey | null,
   ): Promise<EnqueueMessageResult>;
-  markSentManually(adminId: string, messageId: string): Promise<AdminMessageMutationKind>;
+  listWindowStates(registrationIds: string[]): Promise<RegistrationWindowState[]>;
+  recordActivationSent(adminId: string, registrationId: string): Promise<"done" | "not_found">;
   discardMessage(adminId: string, messageId: string): Promise<AdminMessageMutationKind>;
   linkContactManually(adminId: string, registrationId: string, contactId: string): Promise<AdminMessageMutationKind>;
   getConversation(registrationId: string): Promise<Conversation | null>;
@@ -112,14 +126,37 @@ export async function queueInstagramMessage(
   return result;
 }
 
-export async function markSentManually(
+export async function recordActivationSent(
   adminId: string,
-  messageId: string,
+  registrationId: string,
   deps: AdminMessagesDependencies,
-): Promise<{ kind: AdminMessageMutationKind | "rate_limited" }> {
+): Promise<{ kind: "done" | "not_found" | "rate_limited" }> {
   const limit = await deps.checkAdminAction(adminId);
   if (!limit.allowed) return { kind: "rate_limited" };
-  return { kind: await deps.store.markSentManually(adminId, messageId) };
+  return { kind: await deps.store.recordActivationSent(adminId, registrationId) };
+}
+
+export async function listWindowStates(
+  registrationIds: string[],
+  deps: AdminMessagesDependencies,
+): Promise<Map<string, RegistrationWindowState>> {
+  const states = await deps.store.listWindowStates(registrationIds);
+  return new Map(states.map((state) => [state.registrationId, state]));
+}
+
+export async function renderActivationTexts(
+  rows: AdminRegistroRow[],
+  deps: AdminMessagesDependencies,
+): Promise<Map<string, string>> {
+  const templates = await deps.registros.store.listTemplates();
+  const template = templates.find((entry) => entry.key === "ACTIVACION");
+  if (!template) throw new Error("Message template not found");
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      renderMessageTemplate(template.body, buildTemplateValues(row, expedienteUrl(row, deps.registros))),
+    ]),
+  );
 }
 
 export async function discardMessage(

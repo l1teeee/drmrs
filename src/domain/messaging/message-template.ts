@@ -1,4 +1,4 @@
-export const TEMPLATE_KEYS = ["BIENVENIDA", "CAMBIO_ESTADO", "RECORDATORIO_DROP"] as const;
+export const TEMPLATE_KEYS = ["BIENVENIDA", "CAMBIO_ESTADO", "RECORDATORIO_DROP", "ACTIVACION"] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
 export const TEMPLATE_VARIABLES = ["nombre", "numero", "talla", "estado", "link", "fecha_drop"] as const;

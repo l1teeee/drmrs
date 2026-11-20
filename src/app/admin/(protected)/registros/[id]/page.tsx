@@ -8,6 +8,7 @@ import {
   type ConversationMessage,
   getConversation,
   listUnlinkedContacts,
+  renderActivationTexts,
 } from "@/application/messaging/admin-messages";
 import { TINTA_MAQUINA } from "@/components/Maquina";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
@@ -17,9 +18,10 @@ import { requireAdmin } from "@/infrastructure/auth/require-admin";
 import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 
 import { ENLACE, ETIQUETA, FILA, REGLA, TITULO } from "../../../ui";
+import { ActivarPorInstagram } from "../../ActivarPorInstagram";
+import { estadoInstagram } from "../../estado-instagram";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
-import { MensajePendiente } from "./MensajePendiente";
 import { VincularContacto } from "./VincularContacto";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
@@ -44,16 +46,6 @@ function linkLabel(linkedBy: string | null, linkCode: string | null): string {
   if (linkedBy === "USERNAME") return "por usuario de instagram";
   if (linkedBy === "MANUAL") return "a mano";
   return `sin vincular · código ${linkCode ?? "—"}`;
-}
-
-function isPendingManualSend(message: ConversationMessage): boolean {
-  return (
-    message.direction === "OUT" &&
-    message.source === "ADMIN" &&
-    (message.status === "WAITING_CONTACT" ||
-      message.status === "WAITING_WINDOW" ||
-      message.status === "FAILED")
-  );
 }
 
 function messageLabel(message: ConversationMessage): string {
@@ -86,6 +78,13 @@ export default async function ConversacionPage({
   const { registration, messages } = conversation;
   const unlinked = registration.linkedBy === null ? await listUnlinkedContacts(deps) : [];
   const handle = registration.instagramHandle.replace(/^@/, "");
+  const estado = estadoInstagram(registration.lastInboundAt, new Date());
+  let activationText: string | null = null;
+  if (!estado.activo) {
+    const renderedText = (await renderActivationTexts([piece], deps)).get(piece.id);
+    if (renderedText === undefined) throw new Error("Activation text missing");
+    activationText = renderedText;
+  }
 
   return (
     <main className="grid gap-10 md:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] md:gap-14">
@@ -114,10 +113,7 @@ export default async function ConversacionPage({
             <p>talla: {SIZE_LABELS[piece.size].toLowerCase()}</p>
             <p>pieza: {PIECE_STATUS_LABELS[piece.pieceStatus]}</p>
             <p>vínculo: {linkLabel(registration.linkedBy, registration.linkCode)}</p>
-            <p>
-              ventana:{" "}
-              {registration.windowOpen ? "abierta" : "cerrada, espera a que escriba"}
-            </p>
+            <p>instagram: {estado.etiqueta.toLowerCase()}</p>
           </div>
         </div>
       </div>
@@ -142,19 +138,26 @@ export default async function ConversacionPage({
               >
                 <p className={ETIQUETA}>{messageLabel(message)}</p>
                 <p className="whitespace-pre-wrap text-[16px]">{message.body}</p>
-                {isPendingManualSend(message) && (
-                  <MensajePendiente
-                    messageId={message.id}
-                    username={registration.instagramHandle}
-                    text={message.body}
-                  />
-                )}
               </li>
             ))}
           </ul>
         )}
 
         <div className={`grid gap-8 border-t ${REGLA} pt-6`}>
+          {activationText !== null && (
+            <div className="grid gap-3">
+              <p className={ETIQUETA}>
+                Inactivo. Envíale la activación; cuando responda, drmr manda solo lo pendiente.
+              </p>
+              <ActivarPorInstagram
+                registrationId={registration.id}
+                fullName={registration.fullName}
+                username={registration.instagramHandle}
+                text={activationText}
+                activationSentAt={registration.activationSentAt?.toISOString() ?? null}
+              />
+            </div>
+          )}
           <EnviarMensaje registrationId={registration.id} />
 
           {registration.linkedBy === null && unlinked.length > 0 && (

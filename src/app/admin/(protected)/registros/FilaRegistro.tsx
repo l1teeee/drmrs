@@ -9,6 +9,8 @@ import { SIZE_LABELS } from "@/domain/registration/piece-status";
 import type { PieceStatus, Size } from "@/domain/registration/registration";
 
 import { ENLACE, ETIQUETA, FILA, NUMERO } from "../../ui";
+import { ActivarPorInstagram } from "../ActivarPorInstagram";
+import type { EstadoInstagram } from "../estado-instagram";
 import { regenerateExpedienteLinkAction } from "./actions";
 import { PistaPieza } from "./PistaPieza";
 
@@ -21,6 +23,8 @@ export interface FilaRegistroProps {
   size: Size;
   pieceStatus: PieceStatus;
   expedienteUrl: string;
+  estado: EstadoInstagram;
+  activacion: { text: string; sentAt: string | null } | null;
 }
 
 const ACCION = `${ENLACE} text-[14px]`;
@@ -34,6 +38,8 @@ export function FilaRegistro({
   size,
   pieceStatus,
   expedienteUrl,
+  estado,
+  activacion,
 }: FilaRegistroProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -111,6 +117,7 @@ export function FilaRegistro({
               @{cleanHandle}
             </a>
             <span className={ETIQUETA}>talla {SIZE_LABELS[size]}</span>
+            <span className={ETIQUETA}>{estado.etiqueta}</span>
           </div>
           <PistaPieza registrationId={id} current={pieceStatus} />
         </div>
@@ -166,6 +173,16 @@ export function FilaRegistro({
             </span>
           )}
         </div>
+        {activacion && (
+          <ActivarPorInstagram
+            compact
+            registrationId={id}
+            fullName={fullName}
+            username={instagramHandle}
+            text={activacion.text}
+            activationSentAt={activacion.sentAt}
+          />
+        )}
         <div aria-live="polite">
           {copied && <span className="sr-only">Link copiado</span>}
           {actionError && (

@@ -20,7 +20,7 @@ export interface AdminRegistrosDependencies {
 
 export type AdminRegistroView = AdminRegistroRow & { expedienteUrl: string };
 
-function expedienteUrl(
+export function expedienteUrl(
   registration: Pick<AdminRegistroRow, "id" | "registrationNumber" | "linkVersion">,
   deps: AdminRegistrosDependencies,
 ): string {
