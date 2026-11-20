@@ -1,72 +1,48 @@
-import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-import { cargarFuenteMaquina } from "@/app/expediente/expediente-imagen";
+import { ImageResponse } from "next/og";
 
 export const alt = "drmrs archive · Archivo 001";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
+const LOGO_ANCHO = 560;
+const LOGO_ALTO = Math.round((LOGO_ANCHO * 72) / 177);
+
+async function logoBlancoDataUri(): Promise<string> {
+  const svg = await readFile(join(process.cwd(), "public/drmr-logo.svg"), "utf8");
+  const blanco = svg.replaceAll("#182AE1", "#FFFFFF");
+  return `data:image/svg+xml;base64,${Buffer.from(blanco).toString("base64")}`;
+}
+
 export default async function OpenGraphImage() {
-  const fuente = await cargarFuenteMaquina();
-  const margen = Math.round(size.width * 0.08);
+  const logo = await logoBlancoDataUri();
 
   return new ImageResponse(
     (
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
           width: "100%",
           height: "100%",
-          padding: `${margen}px`,
           backgroundColor: "#182AE1",
-          color: "#ffffff",
-          fontFamily: '"Courier Prime", monospace',
         }}
       >
         <div
           style={{
             display: "flex",
-            fontSize: "76px",
-            lineHeight: 1.1,
-          }}
-        >
-          drmrs archive
-        </div>
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            height: "1px",
-            backgroundColor: "rgba(255, 255, 255, 0.3)",
-            marginTop: "36px",
-            marginBottom: "36px",
+            width: LOGO_ANCHO,
+            height: LOGO_ALTO,
+            backgroundImage: `url(${logo})`,
+            backgroundSize: "100% 100%",
+            backgroundRepeat: "no-repeat",
           }}
         />
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            fontSize: "30px",
-            lineHeight: 1.6,
-          }}
-        >
-          <div style={{ display: "flex" }}>Archivo 001 · 50 piezas numeradas</div>
-          <div style={{ display: "flex" }}>04.12 · 19:00 · Querétaro</div>
-        </div>
       </div>
     ),
-    {
-      ...size,
-      fonts: [
-        {
-          name: "Courier Prime",
-          data: fuente,
-          style: "normal",
-          weight: 400,
-        },
-      ],
-    },
+    { ...size },
   );
 }
