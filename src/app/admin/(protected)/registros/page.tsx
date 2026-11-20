@@ -31,6 +31,7 @@ import { estadoInstagram } from "../estado-instagram";
 import { Paginacion } from "../Paginacion";
 import { hrefPagina, parsePagina } from "../parametros-pagina";
 import { FilaRegistro, type FilaRegistroProps } from "./FilaRegistro";
+import { Refrescar } from "./Refrescar";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -110,6 +111,7 @@ export default async function RegistrosPage({
         <div className="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-3">
           <h1 className={TITULO}>Registros</h1>
           <div className="flex items-baseline gap-6">
+            <Refrescar />
             <Link href={adminHref("/registros/importar")} className={ENLACE}>
               Importar
             </Link>
