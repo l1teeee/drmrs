@@ -30,7 +30,7 @@ export async function updateDrop(
   adminId: string,
   input: UpdateDropInput,
   deps: DropsDependencies,
-): Promise<{ kind: "updated" | "not_found" | "rate_limited" }> {
+): Promise<{ kind: "updated" | "not_found" | "needs_duration" | "rate_limited" }> {
   const limit = await deps.checkAdminAction(adminId);
   if (!limit.allowed) return { kind: "rate_limited" };
   const { dropId, ...fields } = input;
@@ -41,7 +41,7 @@ export async function setDropStatus(
   adminId: string,
   input: DropStatusInput,
   deps: DropsDependencies,
-): Promise<{ kind: "updated" | "not_found" | "stale" | "rate_limited" }> {
+): Promise<{ kind: "updated" | "not_found" | "stale" | "needs_duration" | "rate_limited" }> {
   const limit = await deps.checkAdminAction(adminId);
   if (!limit.allowed) return { kind: "rate_limited" };
   return { kind: await deps.store.setDropStatus(adminId, input.dropId, input.expectedStatus, input.newStatus) };

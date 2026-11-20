@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { ContadorRegistros } from "@/components/ContadorRegistros";
 import { CuentaRegresiva } from "@/components/CuentaRegresiva";
 import { FolioArchivo } from "@/components/FolioArchivo";
 import { TituloArchivo } from "@/components/TituloArchivo";
@@ -28,7 +27,7 @@ async function SeccionArchivo() {
     );
   }
 
-  const dropPublico = toDropPublico(drop);
+  const dropPublico = toDropPublico(drop, new Date());
 
   if (dropPublico.estado === "SIN_DROP") {
     return <p className="text-[16px] text-white/80">El registro está cerrado.</p>;
@@ -57,9 +56,6 @@ async function SeccionArchivo() {
       <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
         {dropPublico.aperturaTitular}
       </p>
-      <Suspense fallback={null}>
-        <ContadorRegistros dropId={dropPublico.id!} />
-      </Suspense>
       <Link
         href="/registro"
         className="group relative mt-10 inline-flex items-center gap-5 overflow-hidden border border-white px-6 py-4 text-white transition-colors duration-300 hover:text-azul focus-visible:text-azul focus-visible:outline-none motion-reduce:transition-none"

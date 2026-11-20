@@ -15,12 +15,32 @@ export interface Drop {
   name: string;
   registeredOpensAt: Date;
   publicOpensAt: Date;
+  registrationHours: number | null;
+  registrationOpenedAt: Date | null;
   pieces: number;
   status: DropStatus;
 }
 
 export const DROP_TIME_ZONE = "America/Mexico_City";
 export const MEXICO_UTC_OFFSET = "-06:00";
+
+export function registrationClosesAt(drop: Pick<Drop, "registrationOpenedAt" | "registrationHours">): Date | null {
+  if (drop.registrationOpenedAt === null || drop.registrationHours === null) return null;
+  return new Date(drop.registrationOpenedAt.getTime() + drop.registrationHours * 60 * 60 * 1000);
+}
+
+export function isRegistrationOpen(drop: Drop, now: Date): boolean {
+  const closesAt = registrationClosesAt(drop);
+  return drop.status === "REGISTRO" && (closesAt === null || now < closesAt);
+}
+
+export function hoursFromDuration(amount: number, unit: "horas" | "dias"): number {
+  return unit === "dias" ? amount * 24 : amount;
+}
+
+export function durationFromHours(hours: number): { amount: number; unit: "horas" | "dias" } {
+  return hours % 24 === 0 ? { amount: hours / 24, unit: "dias" } : { amount: hours, unit: "horas" };
+}
 
 export function formatDropNumber(n: number): string {
   return String(n).padStart(3, "0");

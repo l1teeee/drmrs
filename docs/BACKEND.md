@@ -23,6 +23,15 @@ La numeración va de 1 a 9999 en cada drop, con un bloqueo transaccional indepen
 son únicos dentro del drop; la misma persona puede registrarse en varios archivos.
 La cantidad de piezas es informativa: no limita el registro gratuito.
 
+La duración del pre-registro se configura por drop en horas o días (de 1 a 2160 horas).
+Abrir el registro exige una duración (`needs_duration` si falta) y fija `registration_opened_at`;
+cada nueva apertura inicia otra ventana. El cierre se deriva de esa fecha más `registration_hours`:
+al alcanzarlo, la consulta pública y la transacción de registro rechazan nuevas altas como cerrado,
+sin acción manual ni cron. Editar la duración mientras está abierto mueve el cierre sin reiniciar
+la apertura. La migración `0009_preregistro.sql` conserva la duración nula de los drops existentes
+como ventana sin vencimiento y fija la apertura de los que ya están en `REGISTRO`; la importación
+ignora esta ventana y el acceso anticipado de 24 horas conserva su comportamiento.
+
 El formulario escribe solo en el drop con estado `REGISTRO`, comprobado nuevamente con
 `FOR SHARE` dentro de la transacción. Sin un drop abierto devuelve HTTP 409 con
 `{ok:false,error:"cerrado"}` antes de consumir Turnstile. Las respuestas exitosas incluyen

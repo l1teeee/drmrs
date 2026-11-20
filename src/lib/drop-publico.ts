@@ -3,6 +3,7 @@ import {
   formatDropDateShort,
   formatDropDateStamp,
   formatDropNumber,
+  isRegistrationOpen,
   type Drop,
 } from "@/domain/drop/drop";
 
@@ -24,7 +25,7 @@ export interface DropPublico {
   publicoCorta: string;
 }
 
-export function toDropPublico(drop: Drop | null): DropPublico {
+export function toDropPublico(drop: Drop | null, now: Date): DropPublico {
   if (drop === null) {
     return {
       estado: "SIN_DROP",
@@ -44,7 +45,7 @@ export function toDropPublico(drop: Drop | null): DropPublico {
   }
 
   return {
-    estado: drop.status === "REGISTRO" ? "REGISTRO" : "CERRADO",
+    estado: isRegistrationOpen(drop, now) ? "REGISTRO" : "CERRADO",
     id: drop.id,
     nombre: drop.name,
     folio: formatDropNumber(drop.number),

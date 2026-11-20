@@ -43,7 +43,7 @@ async function ContenidoRegistro() {
     );
   }
 
-  const dropPublico = toDropPublico(drop);
+  const dropPublico = toDropPublico(drop, new Date());
 
   if (dropPublico.estado === "SIN_DROP") {
     return (

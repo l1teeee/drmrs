@@ -41,7 +41,11 @@ export const postgresRegistrationRepository: RegistrationStore = {
       ["SET LOCAL lock_timeout = '3s'", "SET LOCAL statement_timeout = '5s'"],
       async (client) => {
         const drops = await client.query<{ status: DropStatus; number: number; name: string }>(
-          "SELECT status, number, name FROM drops WHERE id = $1 FOR SHARE", [dropId],
+          `SELECT status, number, name FROM drops WHERE id = $1 AND status = 'REGISTRO'
+             AND (registration_hours IS NULL OR registration_opened_at IS NULL
+                  OR now() < registration_opened_at + make_interval(hours => registration_hours))
+           FOR SHARE`,
+          [dropId],
         );
         const dropRow = drops.rows[0];
         if (!dropRow || dropRow.status !== "REGISTRO") return { kind: "closed" };

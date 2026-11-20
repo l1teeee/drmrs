@@ -9,7 +9,7 @@ export async function HojaExpedienteActual() {
   await connection();
   let drop = null;
   try {
-    drop = toDropPublico(await getPublicCurrentDrop());
+    drop = toDropPublico(await getPublicCurrentDrop(), new Date());
   } catch (error) {
     log("error", "public_drop_failed", { code: safeErrorCode(error) });
   }

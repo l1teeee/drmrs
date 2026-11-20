@@ -18,7 +18,8 @@ export function EstadoDrop({ id, status, otro }: { id: string; status: DropStatu
     startTransition(async () => {
       const result = await cambiarEstadoDropAction({ dropId: id, expectedStatus: status, newStatus: next });
       if (result.kind === "updated") { setConfirming(false); router.refresh(); return; }
-      setError(result.kind === "stale" ? "Alguien cambió este drop; recarga." : "No se pudo guardar.");
+      setConfirming(false);
+      setError(result.kind === "stale" ? "Alguien cambió este drop; recarga." : result.kind === "needs_duration" ? "Pon la duración del pre-registro antes de abrirlo." : "No se pudo guardar.");
     });
   }
   return <span className="flex flex-wrap items-baseline gap-3 text-[13px]">

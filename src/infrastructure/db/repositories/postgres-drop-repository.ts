@@ -7,7 +7,8 @@ import { getPool } from "../client";
 import { inTransaction } from "../transaction";
 
 const transactionSettings = ["SET LOCAL lock_timeout = '3s'", "SET LOCAL statement_timeout = '5s'"];
-const dropColumns = "d.id, d.number, d.name, d.registered_opens_at, d.public_opens_at, d.pieces, d.status";
+const dropColumns = `d.id, d.number, d.name, d.registered_opens_at, d.public_opens_at,
+  d.registration_hours, d.registration_opened_at, d.pieces, d.status`;
 
 interface DropRow {
   id: string;
@@ -15,6 +16,8 @@ interface DropRow {
   name: string;
   registered_opens_at: Date;
   public_opens_at: Date;
+  registration_hours: number | null;
+  registration_opened_at: Date | null;
   pieces: number;
   status: DropStatus;
 }
@@ -26,6 +29,8 @@ function toDrop(row: DropRow): Drop {
     name: row.name,
     registeredOpensAt: row.registered_opens_at,
     publicOpensAt: row.public_opens_at,
+    registrationHours: row.registration_hours,
+    registrationOpenedAt: row.registration_opened_at,
     pieces: row.pieces,
     status: row.status,
   };
@@ -67,7 +72,11 @@ export const postgresDropRepository: DropStore = {
   },
 
   async findOpenDrop() {
-    const result = await getPool().query<DropRow>(`SELECT ${dropColumns} FROM drops d WHERE d.status = 'REGISTRO'`);
+    const result = await getPool().query<DropRow>(
+      `SELECT ${dropColumns} FROM drops d WHERE d.status = 'REGISTRO'
+         AND (d.registration_hours IS NULL OR d.registration_opened_at IS NULL
+              OR now() < d.registration_opened_at + make_interval(hours => d.registration_hours))`,
+    );
     return result.rows[0] ? toDrop(result.rows[0]) : null;
   },
 
@@ -75,9 +84,9 @@ export const postgresDropRepository: DropStore = {
     try {
       return await inTransaction(getPool(), transactionSettings, async (client) => {
         const result = await client.query<{ id: string }>(
-          `INSERT INTO drops (number, name, registered_opens_at, public_opens_at, pieces)
-           VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-          [input.number, input.name, input.registeredOpensAt, input.publicOpensAt, input.pieces],
+          `INSERT INTO drops (number, name, registered_opens_at, public_opens_at, pieces, registration_hours)
+           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+          [input.number, input.name, input.registeredOpensAt, input.publicOpensAt, input.pieces, input.registrationHours],
         );
         const id = result.rows[0]!.id;
         await auditDrop(client, adminId, "DROP_CREATED", id, { number: input.number });
@@ -91,10 +100,16 @@ export const postgresDropRepository: DropStore = {
 
   async updateDrop(adminId, id, input) {
     return inTransaction(getPool(), transactionSettings, async (client) => {
+      const current = await client.query<{ status: DropStatus }>(
+        "SELECT status FROM drops WHERE id = $1 FOR UPDATE", [id],
+      );
+      const drop = current.rows[0];
+      if (!drop) return "not_found";
+      if (drop.status === "REGISTRO" && input.registrationHours === null) return "needs_duration";
       const result = await client.query<{ number: number }>(
         `UPDATE drops SET name = $2, registered_opens_at = $3, public_opens_at = $4,
-         pieces = $5, updated_at = now() WHERE id = $1 RETURNING number`,
-        [id, input.name, input.registeredOpensAt, input.publicOpensAt, input.pieces],
+         pieces = $5, registration_hours = $6, updated_at = now() WHERE id = $1 RETURNING number`,
+        [id, input.name, input.registeredOpensAt, input.publicOpensAt, input.pieces, input.registrationHours],
       );
       const row = result.rows[0];
       if (!row) return "not_found";
@@ -107,12 +122,13 @@ export const postgresDropRepository: DropStore = {
     try {
       return await inTransaction(getPool(), transactionSettings, async (client) => {
         await client.query("SELECT pg_advisory_xact_lock(hashtext('drmr_drop_status'))");
-        const result = await client.query<{ status: DropStatus; number: number }>(
-          "SELECT status, number FROM drops WHERE id = $1 FOR UPDATE", [id],
+        const result = await client.query<{ status: DropStatus; number: number; registration_hours: number | null }>(
+          "SELECT status, number, registration_hours FROM drops WHERE id = $1 FOR UPDATE", [id],
         );
         const row = result.rows[0];
         if (!row) return "not_found";
         if (row.status !== expected) return "stale";
+        if (next === "REGISTRO" && row.registration_hours === null) return "needs_duration";
         if (next === "REGISTRO") {
           const closed = await client.query<{ id: string; number: number }>(
             `UPDATE drops SET status = 'CERRADO', updated_at = now()
@@ -124,7 +140,13 @@ export const postgresDropRepository: DropStore = {
             });
           }
         }
-        await client.query("UPDATE drops SET status = $2, updated_at = now() WHERE id = $1", [id, next]);
+        await client.query(
+          `UPDATE drops SET status = $2, updated_at = now(),
+             registration_opened_at = CASE WHEN $2 = 'REGISTRO' AND status <> 'REGISTRO'
+                                           THEN now() ELSE registration_opened_at END
+           WHERE id = $1`,
+          [id, next],
+        );
         await auditDrop(client, adminId, "DROP_STATUS_CHANGED", id, { number: row.number, from: row.status, to: next });
         return "updated";
       });
