@@ -53,9 +53,17 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
         {status.mode === "disabled" && <p className={ESTADO}>Instagram no está configurado en este entorno.</p>}
         {status.mode === "log" && <p className={ESTADO}>Modo de prueba: los mensajes no salen a Instagram.</p>}
         {status.mode === "instagram" && status.connection && (
-          <div className="grid gap-1">
-            <p className={ESTADO}>Conectado como @{status.connection.username}</p>
-            <p className={ETIQUETA}>desde {dateFormatter.format(status.connection.connectedAt)}</p>
+          <div className="grid justify-items-start gap-5">
+            <div className="grid gap-1">
+              <p className={ESTADO}>Conectado como @{status.connection.username}</p>
+              <p className={ETIQUETA}>desde {dateFormatter.format(status.connection.connectedAt)}</p>
+            </div>
+            {admin.role === "OWNER" && (
+              <a href="/api/instagram/connect" className={ENLACE_BOTON}>
+                <span aria-hidden="true" className={BARRIDO} />
+                <span className="relative">Volver a conectar</span>
+              </a>
+            )}
           </div>
         )}
         {status.mode === "instagram" && !status.connection && (

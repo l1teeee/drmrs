@@ -14,7 +14,10 @@ export async function loadInstagramMessenger(): Promise<InstagramMessenger | nul
   const connection = await postgresInstagramConnectionRepository.find();
   if (!connection) return null;
   return new GraphInstagramMessenger({
-    baseUrl: environment.META_GRAPH_API_BASE_URL,
+    baseUrl:
+      connection.kind === "INSTAGRAM_LOGIN"
+        ? environment.INSTAGRAM_GRAPH_API_BASE_URL
+        : environment.META_GRAPH_API_BASE_URL,
     accountId: connection.accountId,
     accessToken: connection.accessToken,
   });

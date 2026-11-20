@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { after } from "next/server";
 
+import type { InstagramConnectionKind } from "@/application/messaging/instagram-connection";
 import { getEnv } from "@/infrastructure/config/env";
 import { postgresInstagramConnectionRepository } from "@/infrastructure/db/repositories/postgres-instagram-connection-repository";
 import { readLimitedBody } from "@/infrastructure/http/read-limited-body";
@@ -35,19 +36,26 @@ export async function GET(request: Request): Promise<Response> {
 export async function POST(request: Request): Promise<Response> {
   const environment = getEnv();
   if (environment.MESSAGING_MODE === "disabled") return new Response(null, { status: 404 });
-  if (!SIGNATURE_HEADER_FORMAT.test(request.headers.get("x-hub-signature-256") ?? "")) {
+  const signature = request.headers.get("x-hub-signature-256");
+  if (!SIGNATURE_HEADER_FORMAT.test(signature ?? "")) {
     return new Response(null, { status: 401 });
   }
   const body = await readLimitedBody(request, MAX_BODY_BYTES);
   if (!body.ok) return new Response(null, { status: 413 });
-  if (!environment.META_APP_SECRET || !isValidSignature(
-    body.bytes, request.headers.get("x-hub-signature-256"), environment.META_APP_SECRET,
-  )) {
-    return new Response(null, { status: 401 });
+  let signedBy: InstagramConnectionKind | null = null;
+  if (environment.INSTAGRAM_APP_SECRET && isValidSignature(body.bytes, signature, environment.INSTAGRAM_APP_SECRET)) {
+    signedBy = "INSTAGRAM_LOGIN";
+  } else if (environment.META_APP_SECRET && isValidSignature(body.bytes, signature, environment.META_APP_SECRET)) {
+    signedBy = "UNIFIED_LOGIN";
   }
+  if (signedBy === null) return new Response(null, { status: 401 });
   const connection = await postgresInstagramConnectionRepository.find();
   if (!connection) {
     log("warn", "instagram_webhook_not_connected");
+    return new Response("EVENT_RECEIVED");
+  }
+  if (connection.kind !== signedBy) {
+    log("info", "instagram_webhook_other_app", { signedBy });
     return new Response("EVENT_RECEIVED");
   }
   let payload: unknown;
@@ -58,6 +66,7 @@ export async function POST(request: Request): Promise<Response> {
     return new Response("EVENT_RECEIVED");
   }
   const parsed = parseInstagramWebhook(payload, connection.accountId);
+  log("info", "instagram_webhook_received", { events: parsed.events.length });
   const result = await ingestConfiguredInstagramEvents(parsed.events, {
     ownAccountId: connection.accountId,
     deadline: Date.now() + 25_000,

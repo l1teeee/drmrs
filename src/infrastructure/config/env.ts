@@ -67,6 +67,8 @@ const serverEnvSchema = z
     META_APP_ID: optionalString.pipe(z.string().regex(/^\d+$/).optional()),
     META_APP_SECRET: optionalString.pipe(z.string().min(16).optional()),
     INSTAGRAM_LOGIN_CONFIG_ID: optionalString.pipe(z.string().regex(/^\d+$/).optional()),
+    INSTAGRAM_APP_ID: optionalString.pipe(z.string().regex(/^\d+$/).optional()),
+    INSTAGRAM_APP_SECRET: optionalString.pipe(z.string().min(16).optional()),
     META_WEBHOOK_VERIFY_TOKEN: optionalString.pipe(z.string().min(16).optional()),
     INSTAGRAM_TOKEN_ENCRYPTION_KEY: optionalTokenKey,
     INSTAGRAM_BUSINESS_USERNAME: optionalString.pipe(z.string().regex(/^[a-z0-9._]{1,30}$/).optional()),
@@ -77,6 +79,13 @@ const serverEnvSchema = z
         (value) => new URL(value).protocol === "https:" && /\/v\d+\.\d+$/.test(value),
         "must use https and end with an API version",
       ).default("https://graph.facebook.com/v27.0"),
+    ),
+    INSTAGRAM_GRAPH_API_BASE_URL: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.url().refine(
+        (value) => new URL(value).protocol === "https:" && /\/v\d+\.\d+$/.test(value),
+        "must use https and end with an API version",
+      ).default("https://graph.instagram.com/v26.0"),
     ),
     CRON_SECRET: optionalString,
     TURNSTILE_SECRET_KEY: optionalString,
@@ -100,13 +109,7 @@ const serverEnvSchema = z
       });
     }
     if (value.MESSAGING_MODE === "instagram") {
-      for (const field of [
-        "META_APP_ID",
-        "META_APP_SECRET",
-        "INSTAGRAM_LOGIN_CONFIG_ID",
-        "META_WEBHOOK_VERIFY_TOKEN",
-        "INSTAGRAM_TOKEN_ENCRYPTION_KEY",
-      ] as const) {
+      for (const field of ["META_WEBHOOK_VERIFY_TOKEN", "INSTAGRAM_TOKEN_ENCRYPTION_KEY"] as const) {
         if (!value[field]) {
           context.addIssue({
             code: "custom",
@@ -114,6 +117,31 @@ const serverEnvSchema = z
             message: "is required when MESSAGING_MODE is instagram",
           });
         }
+      }
+      const loginGroups = [
+        ["META_APP_ID", "META_APP_SECRET", "INSTAGRAM_LOGIN_CONFIG_ID"],
+        ["INSTAGRAM_APP_ID", "INSTAGRAM_APP_SECRET"],
+      ] as const;
+      for (const group of loginGroups) {
+        if (group.some((field) => value[field]) && !group.every((field) => value[field])) {
+          for (const field of group) {
+            if (!value[field]) {
+              context.addIssue({
+                code: "custom",
+                path: [field],
+                message: `is required together with ${group.filter((other) => other !== field).join(", ")}`,
+              });
+            }
+          }
+        }
+      }
+      if (!loginGroups.some((group) => group.every((field) => value[field]))) {
+        context.addIssue({
+          code: "custom",
+          path: ["META_APP_ID"],
+          message:
+            "set META_APP_ID, META_APP_SECRET and INSTAGRAM_LOGIN_CONFIG_ID, or INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET, when MESSAGING_MODE is instagram",
+        });
       }
       if (!value.INSTAGRAM_ALLOW_ANY_ACCOUNT && !value.INSTAGRAM_BUSINESS_USERNAME) {
         context.addIssue({
