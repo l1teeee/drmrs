@@ -6,7 +6,7 @@ import { useRef, useState, useTransition } from "react";
 import type { TemplateKey } from "@/domain/messaging/message-template";
 
 import { queueInstagramMessageAction } from "../../mensajes/actions";
-import { BotonArchivo, CAMPO_AREA, ENLACE, ETIQUETA } from "../../../ui";
+import { BotonArchivo, CAMPO_AREA, ENLACE, ETIQUETA, REGLA } from "../../../ui";
 
 const MAX_LENGTH = 1000;
 const RESULTADO_MS = 4000;
@@ -15,14 +15,21 @@ interface EnviarMensajeProps {
   registrationId: string;
   activo: boolean;
   plantillas: Array<{ key: TemplateKey; label: string; texto: string }>;
+  todasPlantillas: Array<{ key: TemplateKey; label: string; texto: string }>;
 }
 
-export function EnviarMensaje({ registrationId, activo, plantillas }: EnviarMensajeProps) {
+export function EnviarMensaje({
+  registrationId,
+  activo,
+  plantillas,
+  todasPlantillas,
+}: EnviarMensajeProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [texto, setTexto] = useState("");
   const [plantilla, setPlantilla] = useState<{ key: TemplateKey; texto: string } | null>(null);
+  const [verTodas, setVerTodas] = useState(false);
   const [confirmando, setConfirmando] = useState(false);
   const [resultado, setResultado] = useState<string | null>(null);
 
@@ -40,7 +47,7 @@ export function EnviarMensaje({ registrationId, activo, plantillas }: EnviarMens
     setResultado(null);
     setConfirmando(false);
     setTexto(textoPlantilla);
-    setPlantilla({ key, texto: textoPlantilla });
+    setPlantilla(key === "ACTIVACION" ? null : { key, texto: textoPlantilla });
     textareaRef.current?.focus();
   }
 
@@ -80,21 +87,51 @@ export function EnviarMensaje({ registrationId, activo, plantillas }: EnviarMens
 
   return (
     <section className="grid gap-3">
-      {plantillas.length > 0 && (
-        <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <span className={ETIQUETA}>Plantillas:</span>
-          {plantillas.map((entry) => (
-            <button
-              key={entry.key}
-              type="button"
-              disabled={isPending}
-              onClick={() => handlePlantilla(entry.key, entry.texto)}
-              className={`${ENLACE} text-[14px]`}
-            >
-              {entry.label}
-            </button>
+      <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <span className={ETIQUETA}>Plantillas:</span>
+        {plantillas.map((entry) => (
+          <button
+            key={entry.key}
+            type="button"
+            disabled={isPending}
+            onClick={() => handlePlantilla(entry.key, entry.texto)}
+            className={`${ENLACE} text-[14px]`}
+          >
+            {entry.label}
+          </button>
+        ))}
+        <button
+          type="button"
+          aria-expanded={verTodas}
+          aria-controls="todas-las-plantillas"
+          onClick={() => setVerTodas(!verTodas)}
+          className={`${ENLACE} text-[14px]`}
+        >
+          {verTodas ? "Ocultar plantillas" : "Todas las plantillas"}
+        </button>
+      </p>
+      {verTodas && (
+        <ul id="todas-las-plantillas" className={`grid gap-1 border ${REGLA} p-2`}>
+          {todasPlantillas.map((entry) => (
+            <li key={entry.key}>
+              <button
+                type="button"
+                disabled={isPending}
+                onClick={() => {
+                  handlePlantilla(entry.key, entry.texto);
+                  setVerTodas(false);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setVerTodas(false);
+                }}
+                className="grid w-full gap-1 px-3 py-2 text-left hover:bg-papel focus-visible:outline focus-visible:outline-1 focus-visible:outline-azul"
+              >
+                <span className="text-[14px] font-medium">{entry.label}</span>
+                <span className={`${ETIQUETA} line-clamp-2`}>{entry.texto}</span>
+              </button>
+            </li>
           ))}
-        </p>
+        </ul>
       )}
       <textarea
         ref={textareaRef}

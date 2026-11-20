@@ -13,7 +13,7 @@ import {
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { TINTA_MAQUINA } from "@/components/Maquina";
 import { listPiecePhotoIds } from "@/application/registration/piece-photos";
-import { TEMPLATE_LABELS, type TemplateKey } from "@/domain/messaging/message-template";
+import { TEMPLATE_KEYS, TEMPLATE_LABELS, type TemplateKey } from "@/domain/messaging/message-template";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { photosEnabledFor } from "@/domain/registration/piece-photo";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
@@ -80,8 +80,13 @@ export default async function ConversacionPage({
   const clavesPlantilla: TemplateKey[] = yaTieneBienvenida
     ? ["RECORDATORIO_DROP"]
     : ["BIENVENIDA", "RECORDATORIO_DROP"];
-  const textos = await renderTemplateTexts(piece, clavesPlantilla, deps);
+  const textos = await renderTemplateTexts(piece, [...TEMPLATE_KEYS], deps);
   const plantillas = clavesPlantilla.map((key) => {
+    const texto = textos.get(key);
+    if (texto === undefined) throw new Error("Template text missing");
+    return { key, label: TEMPLATE_LABELS[key], texto };
+  });
+  const todasPlantillas = TEMPLATE_KEYS.map((key) => {
     const texto = textos.get(key);
     if (texto === undefined) throw new Error("Template text missing");
     return { key, label: TEMPLATE_LABELS[key], texto };
@@ -188,6 +193,7 @@ export default async function ConversacionPage({
               registrationId={registration.id}
               activo={estado.activo}
               plantillas={plantillas}
+              todasPlantillas={todasPlantillas}
             />
 
             {registration.linkedBy === null && unlinked.length > 0 && (
