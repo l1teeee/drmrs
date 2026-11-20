@@ -47,12 +47,20 @@ export async function linkSiblingRegistrations(
   username: string,
   adminId: string | null = null,
 ): Promise<number> {
+  // Handles are unverified and unique only per drop, so username links must agree on WhatsApp identity.
   const linked = await client.query<{ id: string; drop_id: string }>(
     `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'USERNAME', updated_at = now()
        WHERE instagram_handle = $2 AND messaging_contact_id IS NULL
          AND NOT EXISTS (
            SELECT 1 FROM registrations o
            WHERE o.messaging_contact_id = $1 AND o.drop_id = registrations.drop_id
+         )
+         AND (
+           registrations.whatsapp_hash IN (SELECT l.whatsapp_hash FROM registrations l WHERE l.messaging_contact_id = $1)
+           OR (
+             NOT EXISTS (SELECT 1 FROM registrations l WHERE l.messaging_contact_id = $1)
+             AND (SELECT count(DISTINCT u.whatsapp_hash) FROM registrations u WHERE u.instagram_handle = $2 AND u.messaging_contact_id IS NULL) = 1
+           )
          )
      RETURNING id, drop_id`,
     [contactId, username],
