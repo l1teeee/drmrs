@@ -21,8 +21,10 @@ export interface ConversationMessage {
   source: "ADMIN" | "INSTAGRAM_APP" | "CONTACT";
   status: MessageStatus;
   body: string;
+  templateKey: TemplateKey | null;
   createdAt: Date;
   sentAt: Date | null;
+  receivedAt: Date | null;
   readAt: Date | null;
   lastError: string | null;
 }
@@ -177,6 +179,22 @@ export async function renderActivationTexts(
       renderMessageTemplate(template.body, buildTemplateValues(row, expedienteUrl(row, deps.registros))),
     ]),
   );
+}
+
+export async function renderTemplateTexts(
+  row: AdminRegistroRow,
+  keys: TemplateKey[],
+  deps: AdminMessagesDependencies,
+): Promise<Map<TemplateKey, string>> {
+  const templates = await deps.registros.store.listTemplates();
+  const values = buildTemplateValues(row, expedienteUrl(row, deps.registros));
+  const texts = new Map<TemplateKey, string>();
+  for (const key of keys) {
+    const template = templates.find((entry) => entry.key === key);
+    if (!template) throw new Error("Message template not found");
+    texts.set(key, renderMessageTemplate(template.body, values));
+  }
+  return texts;
 }
 
 export async function discardMessage(

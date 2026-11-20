@@ -119,7 +119,7 @@ export function FilaRegistro({
             <span className={ETIQUETA}>talla {SIZE_LABELS[size]}</span>
             <span className={ETIQUETA}>{estado.etiqueta}</span>
           </div>
-          <PistaPieza registrationId={id} current={pieceStatus} />
+          <PistaPieza registrationId={id} current={pieceStatus} activo={estado.activo} />
         </div>
       </div>
 

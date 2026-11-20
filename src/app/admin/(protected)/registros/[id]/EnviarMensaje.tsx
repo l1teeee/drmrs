@@ -1,108 +1,153 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import type { TemplateKey } from "@/domain/messaging/message-template";
 
 import { queueInstagramMessageAction } from "../../mensajes/actions";
-import { BotonArchivo, CAMPO, CAMPO_AREA, ETIQUETA } from "../../../ui";
+import { BotonArchivo, CAMPO_AREA, ENLACE, ETIQUETA } from "../../../ui";
 
-const SELECT = `${CAMPO} max-w-md disabled:cursor-not-allowed disabled:opacity-40`;
-const TEXTAREA = `${CAMPO_AREA} disabled:cursor-not-allowed disabled:opacity-40`;
-const OPTION = "bg-papel text-tinta";
+const MAX_LENGTH = 1000;
+const RESULTADO_MS = 4000;
 
-type Choice = Exclude<TemplateKey, "ACTIVACION"> | "LIBRE";
+interface EnviarMensajeProps {
+  registrationId: string;
+  activo: boolean;
+  plantillas: Array<{ key: TemplateKey; label: string; texto: string }>;
+}
 
-const CHOICE_PREVIEWS: Record<Choice, string> = {
-  BIENVENIDA: "Se enviará la plantilla Bienvenida con los datos de este registro.",
-  CAMBIO_ESTADO: "Se enviará la plantilla Cambio de estado con los datos de este registro.",
-  RECORDATORIO_DROP: "Se enviará la plantilla Recordatorio del drop con los datos de este registro.",
-  LIBRE: "Se enviará el texto que escribas, tal cual.",
-};
-
-export function EnviarMensaje({ registrationId }: { registrationId: string }) {
+export function EnviarMensaje({ registrationId, activo, plantillas }: EnviarMensajeProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [choice, setChoice] = useState<Choice>("BIENVENIDA");
-  const [body, setBody] = useState("");
-  const [result, setResult] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [texto, setTexto] = useState("");
+  const [plantilla, setPlantilla] = useState<{ key: TemplateKey; texto: string } | null>(null);
+  const [confirmando, setConfirmando] = useState(false);
+  const [resultado, setResultado] = useState<string | null>(null);
 
-  const isFree = choice === "LIBRE";
-  const emptyFreeText = isFree && body.trim() === "";
+  const resultadoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleSend() {
-    setResult(null);
+  const vacio = texto.trim() === "";
+
+  function showResultado(message: string) {
+    if (resultadoTimer.current) clearTimeout(resultadoTimer.current);
+    setResultado(message);
+    resultadoTimer.current = setTimeout(() => setResultado(null), RESULTADO_MS);
+  }
+
+  function handlePlantilla(key: TemplateKey, textoPlantilla: string) {
+    setResultado(null);
+    setConfirmando(false);
+    setTexto(textoPlantilla);
+    setPlantilla({ key, texto: textoPlantilla });
+    textareaRef.current?.focus();
+  }
+
+  function enviar() {
+    setResultado(null);
     startTransition(async () => {
       const response = await queueInstagramMessageAction(
-        isFree ? { registrationId, body } : { registrationId, templateKey: choice },
+        plantilla && plantilla.texto === texto
+          ? { registrationId, templateKey: plantilla.key }
+          : { registrationId, body: texto },
       );
       if (!response.ok) {
-        setResult(
+        setConfirmando(false);
+        setResultado(
           response.error === "rate_limited"
-            ? "Demasiados envíos, espera un momento."
+            ? "Demasiados cambios, espera un momento."
             : "No se pudo enviar.",
         );
         return;
       }
-      if (response.status === "QUEUED") {
-        setResult("En camino.");
-      } else {
-        setResult(
-          "Quedó en la conversación. Como aún no nos escribe, mándalo tú con Enviar por Instagram.",
-        );
-      }
-      if (isFree) setBody("");
+      setTexto("");
+      setPlantilla(null);
+      setConfirmando(false);
+      showResultado(response.status === "QUEUED" ? "Enviado." : "En cola: se enviará cuando conteste.");
       router.refresh();
     });
   }
 
+  function handleSend() {
+    if (vacio || isPending) return;
+    if (!activo && !confirmando) {
+      setConfirmando(true);
+      return;
+    }
+    enviar();
+  }
+
   return (
-    <section className="grid gap-5">
-      <h2 className={ETIQUETA}>Responder</h2>
-      <select
+    <section className="grid gap-3">
+      {plantillas.length > 0 && (
+        <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+          <span className={ETIQUETA}>Plantillas:</span>
+          {plantillas.map((entry) => (
+            <button
+              key={entry.key}
+              type="button"
+              disabled={isPending}
+              onClick={() => handlePlantilla(entry.key, entry.texto)}
+              className={`${ENLACE} text-[14px]`}
+            >
+              {entry.label}
+            </button>
+          ))}
+        </p>
+      )}
+      <textarea
+        ref={textareaRef}
+        rows={3}
+        maxLength={MAX_LENGTH}
+        placeholder="Escribe un mensaje…"
         aria-label="Mensaje"
-        value={choice}
+        value={texto}
         disabled={isPending}
         onChange={(event) => {
-          setResult(null);
-          setChoice(event.target.value as Choice);
+          setConfirmando(false);
+          setTexto(event.target.value);
         }}
-        className={SELECT}
-      >
-        <option value="BIENVENIDA" className={OPTION}>
-          Bienvenida
-        </option>
-        <option value="CAMBIO_ESTADO" className={OPTION}>
-          Cambio de estado
-        </option>
-        <option value="RECORDATORIO_DROP" className={OPTION}>
-          Recordatorio del drop
-        </option>
-        <option value="LIBRE" className={OPTION}>
-          Mensaje libre
-        </option>
-      </select>
-      <p className={ETIQUETA}>{CHOICE_PREVIEWS[choice]}</p>
-      {isFree && (
-        <textarea
-          aria-label="Mensaje libre"
-          rows={4}
-          maxLength={1000}
-          value={body}
-          disabled={isPending}
-          onChange={(event) => setBody(event.target.value)}
-          className={TEXTAREA}
-        />
-      )}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-        <BotonArchivo disabled={isPending || emptyFreeText} onClick={handleSend}>
-          {isPending ? "Enviando…" : "Enviar por Instagram"}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            handleSend();
+          }
+        }}
+        className={CAMPO_AREA}
+      />
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <span className={`${ETIQUETA} tabular-nums`}>
+          {texto.length}/{MAX_LENGTH}
+        </span>
+        <BotonArchivo disabled={vacio || isPending} onClick={handleSend}>
+          Enviar
         </BotonArchivo>
-        <p aria-live="polite" className={ETIQUETA}>
-          {result}
-        </p>
       </div>
+      {confirmando && (
+        <div className="grid gap-2">
+          <p className={ETIQUETA}>
+            Está inactiva: pasaron más de 24 h desde su último mensaje. Primero envíale la activación;
+            este mensaje quedará en cola y se enviará cuando conteste.
+          </p>
+          <p className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <button type="button" disabled={isPending} onClick={enviar} className={`${ENLACE} text-[14px]`}>
+              Sí, dejar en cola
+            </button>
+            <button
+              type="button"
+              disabled={isPending}
+              onClick={() => setConfirmando(false)}
+              className={`${ENLACE} text-[14px]`}
+            >
+              No
+            </button>
+          </p>
+        </div>
+      )}
+      <p aria-live="polite" className={ETIQUETA}>
+        {resultado}
+      </p>
     </section>
   );
 }

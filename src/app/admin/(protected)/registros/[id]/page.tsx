@@ -5,13 +5,14 @@ import { connection } from "next/server";
 import { z } from "zod";
 
 import {
-  type ConversationMessage,
   getConversation,
   listUnlinkedContacts,
   renderActivationTexts,
+  renderTemplateTexts,
 } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { TINTA_MAQUINA } from "@/components/Maquina";
+import { TEMPLATE_LABELS, type TemplateKey } from "@/domain/messaging/message-template";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { adminHref } from "@/infrastructure/admin/admin-path";
@@ -25,41 +26,14 @@ import { estadoInstagram } from "../../estado-instagram";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
 import { HiloMensajes } from "./HiloMensajes";
+import { MensajeChat } from "./MensajeChat";
 import { VincularContacto } from "./VincularContacto";
-
-const dateFormatter = new Intl.DateTimeFormat("es-MX", {
-  day: "numeric",
-  month: "short",
-  hour: "2-digit",
-  minute: "2-digit",
-  timeZone: "America/Mexico_City",
-});
-
-const OUT_STATUS_LABELS: Partial<Record<ConversationMessage["status"], string>> = {
-  SENT: "enviado",
-  SENT_MANUALLY: "enviado a mano",
-  QUEUED: "en cola",
-  WAITING_CONTACT: "esperando que nos escriba",
-  WAITING_WINDOW: "fuera de ventana",
-  FAILED: "falló",
-};
 
 function linkLabel(linkedBy: string | null, linkCode: string | null): string {
   if (linkedBy === "CODE") return "por código";
   if (linkedBy === "USERNAME") return "por usuario de instagram";
   if (linkedBy === "MANUAL") return "a mano";
   return `sin vincular · código ${linkCode ?? "—"}`;
-}
-
-function messageLabel(message: ConversationMessage): string {
-  const date = dateFormatter.format(message.createdAt);
-  if (message.direction === "IN") return `${date} · ellos`;
-  if (message.source === "INSTAGRAM_APP") return `${date} · drmr desde la app`;
-  const status = OUT_STATUS_LABELS[message.status];
-  const parts = [date, "drmr"];
-  if (status) parts.push(status);
-  if (message.readAt) parts.push("visto");
-  return parts.join(" · ");
 }
 
 export default async function ConversacionPage({
@@ -88,6 +62,23 @@ export default async function ConversacionPage({
     if (renderedText === undefined) throw new Error("Activation text missing");
     activationText = renderedText;
   }
+  const yaTieneBienvenida = messages.some(
+    (message) => message.templateKey === "BIENVENIDA" && message.status !== "FAILED",
+  );
+  const enCola = messages.filter(
+    (message) =>
+      message.direction === "OUT" &&
+      (message.status === "WAITING_CONTACT" || message.status === "WAITING_WINDOW"),
+  ).length;
+  const clavesPlantilla: TemplateKey[] = yaTieneBienvenida
+    ? ["RECORDATORIO_DROP"]
+    : ["BIENVENIDA", "RECORDATORIO_DROP"];
+  const textos = await renderTemplateTexts(piece, clavesPlantilla, deps);
+  const plantillas = clavesPlantilla.map((key) => {
+    const texto = textos.get(key);
+    if (texto === undefined) throw new Error("Template text missing");
+    return { key, label: TEMPLATE_LABELS[key], texto };
+  });
 
   return (
     <TransicionPagina>
@@ -125,13 +116,22 @@ export default async function ConversacionPage({
         <div className="flex min-w-0 flex-col gap-6 md:min-h-0">
           <div className="grid shrink-0 gap-6">
             <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-              <h1 tabIndex={-1} className={`${TITULO} outline-none`}>
-                Conversación
-              </h1>
+              <div className="grid gap-1">
+                <h1 tabIndex={-1} className={`${TITULO} outline-none break-all`}>
+                  @{handle}
+                </h1>
+                <p className={ETIQUETA}>
+                  {registration.fullName} · {estado.etiqueta}
+                </p>
+              </div>
               {messages.length > 0 && <BorrarChat objetivo={{ tipo: "registro", id: registration.id }} />}
             </div>
 
-            <PistaPieza registrationId={registration.id} current={piece.pieceStatus} />
+            <PistaPieza
+              registrationId={registration.id}
+              current={piece.pieceStatus}
+              activo={estado.activo}
+            />
           </div>
 
           {messages.length === 0 ? (
@@ -141,23 +141,22 @@ export default async function ConversacionPage({
               count={messages.length}
               className={`max-h-[60dvh] overflow-y-auto overscroll-contain border-t ${FILA} focus-visible:outline focus-visible:outline-1 focus-visible:outline-azul md:max-h-none md:min-h-0 md:flex-1`}
             >
-              <ul>
+              <ul className="grid">
                 {messages.map((message) => (
-                  <li
-                    key={message.id}
-                    className={`grid gap-1 border-b ${FILA} py-4 ${
-                      message.direction === "IN" ? "pl-0" : "pl-6 md:pl-12"
-                    }`}
-                  >
-                    <p className={ETIQUETA}>{messageLabel(message)}</p>
-                    <p className="whitespace-pre-wrap text-[16px] [overflow-wrap:anywhere]">{message.body}</p>
-                  </li>
+                  <MensajeChat key={message.id} message={message} />
                 ))}
               </ul>
             </HiloMensajes>
           )}
 
           <div className={`grid shrink-0 gap-8 border-t ${REGLA} pt-6 md:max-h-[45dvh] md:overflow-y-auto`}>
+            {enCola > 0 && (
+              <p role="status" className="border-l-2 border-azul pl-3 text-[14px] text-azul">
+                {enCola === 1
+                  ? "1 mensaje en cola: se enviará cuando conteste."
+                  : `${enCola} mensajes en cola: se enviarán cuando conteste.`}
+              </p>
+            )}
             {activationText !== null && (
               <div className="grid gap-3">
                 <p className={ETIQUETA}>
@@ -172,7 +171,11 @@ export default async function ConversacionPage({
                 />
               </div>
             )}
-            <EnviarMensaje registrationId={registration.id} />
+            <EnviarMensaje
+              registrationId={registration.id}
+              activo={estado.activo}
+              plantillas={plantillas}
+            />
 
             {registration.linkedBy === null && unlinked.length > 0 && (
               <VincularContacto

@@ -237,10 +237,18 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     const registration = registrations.rows[0];
     if (!registration) return null;
     const messages = await getPool().query<ConversationMessage>(
-      `SELECT id, direction, source, status, body, created_at AS "createdAt",
-              sent_at AS "sentAt", read_at AS "readAt", last_error AS "lastError"
-         FROM messages WHERE registration_id = $1
-        ORDER BY created_at, id LIMIT 200`,
+      `SELECT id, direction, source, status, body, "templateKey", "createdAt", "sentAt", "receivedAt", "readAt", "lastError"
+         FROM (
+           SELECT id, direction, source, status, body, template_key AS "templateKey",
+                  created_at AS "createdAt", sent_at AS "sentAt", received_at AS "receivedAt",
+                  read_at AS "readAt", last_error AS "lastError",
+                  COALESCE(sent_at, received_at, created_at) AS orden,
+                  status IN ('QUEUED', 'WAITING_CONTACT', 'WAITING_WINDOW') AS pendiente
+             FROM messages WHERE registration_id = $1
+            ORDER BY pendiente DESC, orden DESC, id DESC
+            LIMIT 200
+         ) ultimos
+        ORDER BY pendiente ASC, orden ASC, id ASC`,
       [registrationId],
     );
     return {

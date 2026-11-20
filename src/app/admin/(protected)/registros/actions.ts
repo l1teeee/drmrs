@@ -12,8 +12,10 @@ import {
   registrationIdSchema,
   templateUpdateSchema,
 } from "@/contracts/admin-registros";
+import { queueInstagramMessage } from "@/application/messaging/admin-messages";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
+import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 
 export async function changePieceStatusAction(input: unknown) {
   const authorization = await requireAdmin("action");
@@ -33,7 +35,13 @@ export async function changePieceStatusAction(input: unknown) {
   if (result.kind !== "changed") {
     return { ok: false, error: result.kind } as const;
   }
+  await queueInstagramMessage(
+    authorization.admin.adminId,
+    { registrationId: parsed.data.registrationId, templateKey: "CAMBIO_ESTADO" },
+    adminMessagesDependencies(),
+  );
   revalidatePath("/admin/registros");
+  revalidatePath("/admin/mensajes");
   return { ok: true } as const;
 }
 
