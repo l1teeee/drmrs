@@ -12,11 +12,14 @@ import {
 } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { TINTA_MAQUINA } from "@/components/Maquina";
+import { listPiecePhotoIds } from "@/application/registration/piece-photos";
 import { TEMPLATE_LABELS, type TemplateKey } from "@/domain/messaging/message-template";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
+import { photosEnabledFor } from "@/domain/registration/piece-photo";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
+import { postgresPiecePhotoRepository } from "@/infrastructure/db/repositories/postgres-piece-photo-repository";
 import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 
 import { ENLACE, ETIQUETA, FILA, REGLA, TITULO } from "../../../ui";
@@ -25,6 +28,7 @@ import { BorrarChat } from "../../BorrarChat";
 import { estadoInstagram } from "../../estado-instagram";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
+import { FotosPieza } from "./FotosPieza";
 import { HiloMensajes } from "./HiloMensajes";
 import { MensajeChat } from "./MensajeChat";
 import { VincularContacto } from "./VincularContacto";
@@ -53,6 +57,9 @@ export default async function ConversacionPage({
   if (!conversation || !piece) notFound();
 
   const { registration, messages } = conversation;
+  const fotoIds = await listPiecePhotoIds(registration.id, {
+    photos: postgresPiecePhotoRepository,
+  });
   const unlinked = registration.linkedBy === null ? await listUnlinkedContacts(deps) : [];
   const handle = registration.instagramHandle.replace(/^@/, "");
   const estado = estadoInstagram(registration.lastInboundAt, new Date());
@@ -111,6 +118,12 @@ export default async function ConversacionPage({
               <p>instagram: {estado.etiqueta.toLowerCase()}</p>
             </div>
           </div>
+
+          <FotosPieza
+            registrationId={registration.id}
+            fotoIds={fotoIds}
+            habilitado={photosEnabledFor(piece.pieceStatus)}
+          />
         </div>
 
         <div className="flex min-w-0 flex-col gap-6 md:min-h-0">

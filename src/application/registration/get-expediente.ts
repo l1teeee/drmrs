@@ -2,6 +2,7 @@ import type { RateLimitCheck } from "@/application/ports/rate-limit";
 import { parseExpedienteSlug } from "@/domain/registration/expediente-link";
 import { firstName, type PieceStatus, type Size } from "@/domain/registration/registration";
 
+import type { PiecePhotoStore } from "./piece-photos";
 import type { ExpedienteCodes, RegistrationStore } from "./registration-store";
 
 export type ExpedienteView = {
@@ -9,11 +10,13 @@ export type ExpedienteView = {
   firstName: string;
   size: Size;
   pieceStatus: PieceStatus;
+  photoIds: string[];
 };
 
 export interface ExpedienteDependencies {
   store: RegistrationStore;
   codes: ExpedienteCodes;
+  photos: PiecePhotoStore;
   checkLookup: RateLimitCheck;
 }
 
@@ -42,5 +45,6 @@ export async function getExpediente(
     firstName: firstName(record.fullName),
     size: record.size,
     pieceStatus: record.pieceStatus,
+    photoIds: await deps.photos.listIds(record.id),
   };
 }

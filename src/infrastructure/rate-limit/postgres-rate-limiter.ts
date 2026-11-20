@@ -15,6 +15,7 @@ export const RATE_LIMITS = {
   registrationIp: { scope: "registro:ip", limit: 30, windowSeconds: 600 },
   registrationWhatsapp: { scope: "registro:whatsapp", limit: 5, windowSeconds: 3600 },
   expedienteIp: { scope: "expediente:ip", limit: 120, windowSeconds: 600 },
+  expedientePhotoIp: { scope: "expediente-foto:ip", limit: 600, windowSeconds: 600 },
   adminSignInIp: { scope: "admin-sign-in:ip", limit: 20, windowSeconds: 900 },
   adminSignInEmail: { scope: "admin-sign-in:email", limit: 5, windowSeconds: 900 },
   adminAction: { scope: "admin-action:admin", limit: 120, windowSeconds: 600 },

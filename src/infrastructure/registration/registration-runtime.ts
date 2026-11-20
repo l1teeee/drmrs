@@ -7,6 +7,7 @@ import { createBotVerifier } from "../bot-protection/turnstile-verifier";
 import { getEnv } from "../config/env";
 import { expedienteCodes } from "../crypto/expediente-code";
 import { postgresInstagramConnectionRepository } from "../db/repositories/postgres-instagram-connection-repository";
+import { postgresPiecePhotoRepository } from "../db/repositories/postgres-piece-photo-repository";
 import { postgresRegistrationRepository } from "../db/repositories/postgres-registration-repository";
 import { queueWelcomeMessage } from "../messaging/welcome-message";
 import { log, safeErrorCode } from "../observability/logger";
@@ -57,6 +58,7 @@ export function expedienteDependencies(): ExpedienteDependencies {
   return {
     store: postgresRegistrationRepository,
     codes: expedienteCodes,
+    photos: postgresPiecePhotoRepository,
     checkLookup: (subject) => consume({ ...RATE_LIMITS.expedienteIp, subject }),
   };
 }

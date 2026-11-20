@@ -86,10 +86,39 @@ async function ContenidoExpediente({ params }: ExpedientePageProps) {
         <p>apertura: 04.12.26, 19:00 h</p>
 
         <AccionesExpediente slug={slug} registrationNumber={numero} />
+
+        {expediente.photoIds.length > 0 && (
+          <>
+            <p className="mt-6">fotos de tu pieza:</p>
+            <div className="mt-2 grid w-[min(100%,360px)] grid-cols-3 gap-2">
+              {expediente.photoIds.map((id, indice) => {
+                const src = `/expediente/${slug}/fotos/${id}`;
+                return (
+                  <a
+                    key={id}
+                    href={src}
+                    target="_blank"
+                    rel="noopener"
+                    className="relative block aspect-square overflow-hidden bg-white/40"
+                  >
+                    <Image
+                      src={src}
+                      alt={`Foto ${indice + 1} de tu pieza`}
+                      fill
+                      unoptimized
+                      sizes="120px"
+                      className="object-cover"
+                    />
+                  </a>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
 
       <p
-        className={`absolute bottom-[clamp(24px,7vh,72px)] right-[clamp(20px,6vw,96px)] rotate-[0.3deg] opacity-75 ${TINTA_MAQUINA}`}
+        className={`absolute bottom-[clamp(24px,7vh,72px)] right-[clamp(20px,6vw,96px)] pointer-events-none rotate-[0.3deg] opacity-75 ${TINTA_MAQUINA}`}
       >
         folio {numero}
       </p>
@@ -99,7 +128,7 @@ async function ContenidoExpediente({ params }: ExpedientePageProps) {
 
 export default function ExpedientePage({ params }: ExpedientePageProps) {
   return (
-    <main className="relative min-h-dvh overflow-hidden bg-papel font-mono text-[13px] leading-[1.7] text-tinta md:text-[15px]">
+    <main className="relative h-dvh overflow-x-hidden overflow-y-auto bg-papel font-mono text-[13px] leading-[1.7] text-tinta md:text-[15px]">
       <Image src="/textura-papel.jpg" alt="" fill className="object-cover" />
 
       <Suspense fallback={null}>

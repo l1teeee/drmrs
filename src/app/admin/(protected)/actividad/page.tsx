@@ -50,6 +50,8 @@ const STATIC_ACTION_LABELS: Record<string, string> = {
   INSTAGRAM_CONTACT_LINKED: "Contacto vinculado",
   INSTAGRAM_CONNECTED: "Instagram conectado",
   INSTAGRAM_DISCONNECTED: "Instagram desconectado",
+  PIECE_PHOTO_ADDED: "Foto de pieza agregada",
+  PIECE_PHOTO_DELETED: "Foto de pieza borrada",
 };
 
 function statusLabel(raw: unknown): string {
@@ -112,6 +114,8 @@ function detalleParts(entry: AuditEntry): Array<string | null> {
     case "INSTAGRAM_MESSAGE_DISCARDED":
     case "INSTAGRAM_MESSAGE_SENT_MANUALLY":
     case "REGISTRATION_DELETED":
+    case "PIECE_PHOTO_ADDED":
+    case "PIECE_PHOTO_DELETED":
       return [registroTexto(entry)];
     case "INSTAGRAM_MESSAGE_QUEUED": {
       const status = metadata.status;
