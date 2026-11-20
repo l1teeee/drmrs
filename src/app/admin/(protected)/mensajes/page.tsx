@@ -1,26 +1,15 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { listRegistros } from "@/application/admin-registros/admin-registros";
-import {
-  listUnlinkedContacts,
-  listUnsentMessages,
-  renderActivationTexts,
-} from "@/application/messaging/admin-messages";
+import { listUnlinkedContacts, listUnsentMessages } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
-import { paginate } from "@/domain/pagination";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 import { loadInstagramConnectionStatus } from "@/infrastructure/instagram/instagram-connection-runtime";
 import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 import { scheduleMessageDelivery } from "@/infrastructure/messaging/schedule-message-delivery";
 
-import { ENLACE, ETIQUETA, FILA, NUMERO, REGLA, TITULO } from "../../ui";
-import { estadoInstagram } from "../estado-instagram";
-import { Paginacion } from "../Paginacion";
-import { hrefPagina, parsePagina } from "../parametros-pagina";
-
-import { FilaSinEnviar } from "./FilaSinEnviar";
+import { ENLACE, ETIQUETA, NUMERO, REGLA, TITULO } from "../../ui";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -51,25 +40,6 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
   const deps = adminMessagesDependencies();
   const unsent = await listUnsentMessages(deps);
   const unlinked = await listUnlinkedContacts(deps);
-  const registros = await listRegistros({}, deps.registros);
-  const activationTexts = await renderActivationTexts(registros, deps);
-  const now = new Date();
-  const paginaSinEnviar = paginate(unsent, parsePagina(resolvedParams.pagina), 20);
-  const paginaContactos = paginate(unlinked, parsePagina(resolvedParams.pagina_contactos), 20);
-  const hrefSinEnviar = (n: number) =>
-    hrefPagina(
-      adminHref("/mensajes"),
-      { pagina_contactos: paginaContactos.page > 1 ? String(paginaContactos.page) : undefined },
-      "pagina",
-      n,
-    );
-  const hrefContactos = (n: number) =>
-    hrefPagina(
-      adminHref("/mensajes"),
-      { pagina: paginaSinEnviar.page > 1 ? String(paginaSinEnviar.page) : undefined },
-      "pagina_contactos",
-      n,
-    );
 
   return (
     <TransicionPagina>
@@ -110,103 +80,17 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
           {instagramParam === "error" && <p className={ETIQUETA}>No se pudo conectar. Intenta de nuevo.</p>}
         </div>
 
-        <section className="grid gap-4">
-          <div className={`flex items-baseline gap-4 border-b ${REGLA} pb-3`}>
+        <section className="grid gap-8 sm:grid-cols-2">
+          <Link href={adminHref("/mensajes/sin-enviar")} className={`grid content-start gap-2 border-t ${REGLA} pt-4`}>
             <span className={`${NUMERO} text-[56px] leading-none`}>{unsent.length}</span>
-            <h2 className={ETIQUETA}>sin enviar</h2>
-          </div>
-          {unsent.length === 0 ? (
-            <p className={ETIQUETA}>todo enviado.</p>
-          ) : (
-            <ul>
-              {paginaSinEnviar.items.map((message) => {
-                const estado = estadoInstagram(message.lastInboundAt, now);
-                const text = activationTexts.get(message.registrationId);
-                if (text === undefined) throw new Error("Activation text missing");
-                const activacion = estado.activo
-                  ? null
-                  : { text, sentAt: message.activationSentAt?.toISOString() ?? null };
-                return (
-                  <FilaSinEnviar
-                    key={message.id}
-                    id={message.id}
-                    registrationId={message.registrationId}
-                    estado={estado}
-                    activacion={activacion}
-                    registrationNumber={message.registrationNumber}
-                    fullName={message.fullName}
-                    instagramHandle={message.instagramHandle}
-                    status={message.status}
-                    body={message.body}
-                    attempts={message.attempts}
-                    createdAt={message.createdAt.toISOString()}
-                    conversacionHref={adminHref("/registros/" + message.registrationId)}
-                  />
-                );
-              })}
-            </ul>
-          )}
-          <Paginacion
-            pagina={paginaSinEnviar.page}
-            totalPaginas={paginaSinEnviar.totalPages}
-            total={paginaSinEnviar.total}
-            hrefAnterior={paginaSinEnviar.page > 1 ? hrefSinEnviar(paginaSinEnviar.page - 1) : null}
-            hrefSiguiente={
-              paginaSinEnviar.page < paginaSinEnviar.totalPages
-                ? hrefSinEnviar(paginaSinEnviar.page + 1)
-                : null
-            }
-          />
-        </section>
-
-        <section className="grid gap-4">
-          <div className={`flex items-baseline gap-4 border-b ${REGLA} pb-3`}>
+            <span className={ETIQUETA}>sin enviar</span>
+            <span className={`${ENLACE} text-[14px]`}>Ver listado →</span>
+          </Link>
+          <Link href={adminHref("/mensajes/sin-vincular")} className={`grid content-start gap-2 border-t ${REGLA} pt-4`}>
             <span className={`${NUMERO} text-[56px] leading-none`}>{unlinked.length}</span>
-            <h2 className={ETIQUETA}>escribieron y no están vinculados</h2>
-          </div>
-          {unlinked.length === 0 ? (
-            <p className={ETIQUETA}>nadie pendiente.</p>
-          ) : (
-            <ul>
-              {paginaContactos.items.map((contact) => (
-                <li key={contact.id} className={`grid gap-1 border-b ${FILA} py-4`}>
-                  <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                    <span className="text-[18px] font-medium">
-                      {contact.username ? `@${contact.username}` : (contact.displayName ?? "sin usuario")}
-                    </span>
-                    <span className={ETIQUETA}>{dateFormatter.format(contact.lastInboundAt)}</span>
-                  </div>
-                  {contact.lastInboundText && (
-                    <p className="truncate text-[16px] text-tinta/60">{contact.lastInboundText}</p>
-                  )}
-                  {contact.username ? (
-                    <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                      <p className={ETIQUETA}>Vincúlalo desde la conversación del registro.</p>
-                      <Link
-                        href={adminHref(`/registros?q=${encodeURIComponent(contact.username)}`)}
-                        className={`${ENLACE} text-[14px]`}
-                      >
-                        Buscar registro
-                      </Link>
-                    </div>
-                  ) : (
-                    <p className={ETIQUETA}>Busca su registro y vincúlalo desde ahí.</p>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-          <Paginacion
-            pagina={paginaContactos.page}
-            totalPaginas={paginaContactos.totalPages}
-            total={paginaContactos.total}
-            hrefAnterior={paginaContactos.page > 1 ? hrefContactos(paginaContactos.page - 1) : null}
-            hrefSiguiente={
-              paginaContactos.page < paginaContactos.totalPages
-                ? hrefContactos(paginaContactos.page + 1)
-                : null
-            }
-          />
+            <span className={ETIQUETA}>escribieron y no están vinculados</span>
+            <span className={`${ENLACE} text-[14px]`}>Ver listado →</span>
+          </Link>
         </section>
       </main>
     </TransicionPagina>

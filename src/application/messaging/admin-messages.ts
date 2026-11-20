@@ -82,6 +82,11 @@ export interface AdminMessageStore {
   recordActivationSent(adminId: string, registrationId: string): Promise<"done" | "not_found">;
   discardMessage(adminId: string, messageId: string): Promise<AdminMessageMutationKind>;
   linkContactManually(adminId: string, registrationId: string, contactId: string): Promise<AdminMessageMutationKind>;
+  deleteRegistrationChat(
+    adminId: string,
+    registrationId: string,
+  ): Promise<{ kind: "done"; deleted: number } | { kind: "not_found" }>;
+  deleteUnlinkedContact(adminId: string, contactId: string): Promise<"done" | "not_found" | "conflict">;
   getConversation(registrationId: string): Promise<Conversation | null>;
   listUnsentMessages(): Promise<UnsentMessage[]>;
   listUnlinkedContacts(): Promise<UnlinkedContact[]>;
@@ -180,6 +185,27 @@ export async function linkContactManually(
   const kind = await deps.store.linkContactManually(adminId, registrationId, contactId);
   if (kind === "done") deps.scheduleDelivery();
   return { kind };
+}
+
+export async function deleteRegistrationChat(
+  adminId: string,
+  registrationId: string,
+  deps: AdminMessagesDependencies,
+): Promise<{ kind: "done" | "not_found" | "rate_limited" }> {
+  const limit = await deps.checkAdminAction(adminId);
+  if (!limit.allowed) return { kind: "rate_limited" };
+  const result = await deps.store.deleteRegistrationChat(adminId, registrationId);
+  return { kind: result.kind };
+}
+
+export async function deleteUnlinkedContact(
+  adminId: string,
+  contactId: string,
+  deps: AdminMessagesDependencies,
+): Promise<{ kind: "done" | "not_found" | "conflict" | "rate_limited" }> {
+  const limit = await deps.checkAdminAction(adminId);
+  if (!limit.allowed) return { kind: "rate_limited" };
+  return { kind: await deps.store.deleteUnlinkedContact(adminId, contactId) };
 }
 
 export function getConversation(registrationId: string, deps: AdminMessagesDependencies) {

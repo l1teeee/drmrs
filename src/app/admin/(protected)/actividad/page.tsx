@@ -35,6 +35,14 @@ const STATIC_ACTION_LABELS: Record<string, string> = {
   ADMIN_CREATED: "Cuenta creada",
   ADMIN_PASSWORD_RESET: "Contraseña restablecida",
   ADMIN_DEACTIVATED: "Cuenta desactivada",
+  REGISTRATION_DELETED: "Registro borrado",
+  INSTAGRAM_CHAT_DELETED: "Chat borrado",
+  INSTAGRAM_CONTACT_DELETED: "Contacto borrado",
+  INSTAGRAM_MESSAGE_QUEUED: "Mensaje en cola",
+  INSTAGRAM_MESSAGE_DISCARDED: "Mensaje descartado",
+  INSTAGRAM_CONTACT_LINKED: "Contacto vinculado",
+  INSTAGRAM_CONNECTED: "Instagram conectado",
+  INSTAGRAM_DISCONNECTED: "Instagram desconectado",
 };
 
 function statusLabel(raw: unknown): string {

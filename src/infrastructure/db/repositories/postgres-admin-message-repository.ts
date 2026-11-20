@@ -103,6 +103,49 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     return discardPendingMessage(adminId, messageId);
   }
 
+  deleteRegistrationChat(
+    adminId: string,
+    registrationId: string,
+  ): Promise<{ kind: "done"; deleted: number } | { kind: "not_found" }> {
+    return inTransaction(getPool(), transactionSettings, async (client) => {
+      const registration = await client.query("SELECT 1 FROM registrations WHERE id = $1 FOR UPDATE", [
+        registrationId,
+      ]);
+      if (registration.rows.length === 0) return { kind: "not_found" };
+      const result = await client.query(
+        `DELETE FROM messages
+          WHERE registration_id = $1
+            AND status NOT IN ('QUEUED', 'WAITING_CONTACT', 'WAITING_WINDOW')
+            AND NOT (locked_until IS NOT NULL AND locked_until >= now())`,
+        [registrationId],
+      );
+      const deleted = result.rowCount ?? 0;
+      await insertAudit(client, adminId, registrationId, "INSTAGRAM_CHAT_DELETED", { deleted });
+      return { kind: "done", deleted };
+    });
+  }
+
+  deleteUnlinkedContact(adminId: string, contactId: string): Promise<"done" | "not_found" | "conflict"> {
+    return inTransaction(getPool(), transactionSettings, async (client) => {
+      const deleted = await client.query(
+        `DELETE FROM messaging_contacts c
+          WHERE c.id = $1
+            AND NOT EXISTS (SELECT 1 FROM registrations r WHERE r.messaging_contact_id = c.id)`,
+        [contactId],
+      );
+      if (deleted.rowCount === 1) {
+        await client.query(
+          `INSERT INTO audit_logs (actor_admin_id, action, entity_type, entity_id)
+           VALUES ($1, 'INSTAGRAM_CONTACT_DELETED', 'messaging_contact', $2)`,
+          [adminId, contactId],
+        );
+        return "done";
+      }
+      const existing = await client.query("SELECT 1 FROM messaging_contacts WHERE id = $1", [contactId]);
+      return existing.rows.length > 0 ? "conflict" : "not_found";
+    });
+  }
+
   async listWindowStates(registrationIds: string[]): Promise<RegistrationWindowState[]> {
     if (registrationIds.length === 0) return [];
     const result = await getPool().query<RegistrationWindowState>(

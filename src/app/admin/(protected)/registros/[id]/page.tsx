@@ -20,6 +20,7 @@ import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-mess
 
 import { ENLACE, ETIQUETA, FILA, REGLA, TITULO } from "../../../ui";
 import { ActivarPorInstagram } from "../../ActivarPorInstagram";
+import { BorrarChat } from "../../BorrarChat";
 import { estadoInstagram } from "../../estado-instagram";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
@@ -123,9 +124,12 @@ export default async function ConversacionPage({
 
         <div className="flex min-w-0 flex-col gap-6 md:min-h-0">
           <div className="grid shrink-0 gap-6">
-            <h1 tabIndex={-1} className={`${TITULO} outline-none`}>
-              Conversación
-            </h1>
+            <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+              <h1 tabIndex={-1} className={`${TITULO} outline-none`}>
+                Conversación
+              </h1>
+              {messages.length > 0 && <BorrarChat objetivo={{ tipo: "registro", id: registration.id }} />}
+            </div>
 
             <PistaPieza registrationId={registration.id} current={piece.pieceStatus} />
           </div>

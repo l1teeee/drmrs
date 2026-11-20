@@ -66,7 +66,7 @@ export function ActivarPorInstagram({
     setFeedback(result);
     setTimeout(() => {
       setFeedback(null);
-    }, 2000);
+    }, result === "copied-desktop" ? 8000 : 2000);
   }
 
   function handleMarkSent() {
@@ -88,11 +88,9 @@ export function ActivarPorInstagram({
   const label =
     feedback === "copied"
       ? "Copiado"
-      : feedback === "copied-desktop"
-        ? "Copiado: pulsa Enviar mensaje"
-        : feedback === "failed"
-          ? "No se pudo copiar"
-          : "Activar por Instagram";
+      : feedback === "failed"
+        ? "No se pudo copiar"
+        : "Activar por Instagram";
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
@@ -113,6 +111,11 @@ export function ActivarPorInstagram({
           </>
         )}
       </a>
+      {feedback === "copied-desktop" && (
+        <span aria-live="polite" className={ETIQUETA}>
+          Copiado. En el perfil abre ⋯ › Enviar mensaje y pega.
+        </span>
+      )}
       <button
         type="button"
         disabled={isPending}

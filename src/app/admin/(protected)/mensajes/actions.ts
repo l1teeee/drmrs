@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import {
+  deleteRegistrationChat,
+  deleteUnlinkedContact,
   discardMessage,
   linkContactManually,
   queueInstagramMessage,
@@ -24,6 +26,8 @@ const queueMessageSchema = z.object({
 const messageIdSchema = z.object({ messageId: z.uuid() });
 const activationSchema = z.object({ registrationId: z.uuid() });
 const linkContactSchema = z.object({ registrationId: z.uuid(), contactId: z.uuid() });
+const deleteChatSchema = z.object({ registrationId: z.uuid() });
+const deleteContactSchema = z.object({ contactId: z.uuid() });
 
 export async function queueInstagramMessageAction(input: unknown) {
   const authorization = await requireAdmin("action");
@@ -60,6 +64,34 @@ export async function discardMessageAction(input: unknown) {
   if (!parsed.success) return { ok: false, error: "invalid" } as const;
   const result = await discardMessage(
     authorization.admin.adminId, parsed.data.messageId, adminMessagesDependencies(),
+  );
+  if (result.kind !== "done") return { ok: false, error: result.kind } as const;
+  revalidatePath("/admin/mensajes");
+  revalidatePath("/admin/registros");
+  return { ok: true } as const;
+}
+
+export async function deleteRegistrationChatAction(input: unknown) {
+  const authorization = await requireAdmin("action");
+  if (!authorization.ok) return { ok: false, error: "unauthorized" } as const;
+  const parsed = deleteChatSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" } as const;
+  const result = await deleteRegistrationChat(
+    authorization.admin.adminId, parsed.data.registrationId, adminMessagesDependencies(),
+  );
+  if (result.kind !== "done") return { ok: false, error: result.kind } as const;
+  revalidatePath("/admin/mensajes");
+  revalidatePath("/admin/registros");
+  return { ok: true } as const;
+}
+
+export async function deleteUnlinkedContactAction(input: unknown) {
+  const authorization = await requireAdmin("action");
+  if (!authorization.ok) return { ok: false, error: "unauthorized" } as const;
+  const parsed = deleteContactSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "invalid" } as const;
+  const result = await deleteUnlinkedContact(
+    authorization.admin.adminId, parsed.data.contactId, adminMessagesDependencies(),
   );
   if (result.kind !== "done") return { ok: false, error: result.kind } as const;
   revalidatePath("/admin/mensajes");
