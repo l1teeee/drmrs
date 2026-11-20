@@ -1,15 +1,22 @@
+import Link from "next/link";
 import { connection } from "next/server";
 
 import type { AuditEntry } from "@/application/admin-registros/admin-registro-store";
 import { listAuditPage } from "@/application/admin-registros/admin-registros";
 import { TransicionPagina } from "@/components/TransicionPagina";
+import {
+  TEMPLATE_KEYS,
+  TEMPLATE_LABELS,
+  type TemplateKey,
+} from "@/domain/messaging/message-template";
+import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS } from "@/domain/registration/piece-status";
 import type { PieceStatus } from "@/domain/registration/registration";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 
-import { FILA, TITULO } from "../../ui";
+import { ENLACE, FILA, TITULO } from "../../ui";
 import { Paginacion } from "../Paginacion";
 import { hrefPagina, parsePagina } from "../parametros-pagina";
 
@@ -66,6 +73,86 @@ function formatAuditAction(entry: AuditEntry): string {
   return STATIC_ACTION_LABELS[entry.action] ?? entry.action;
 }
 
+const QUEUED_STATUS_LABELS: Record<string, string> = {
+  QUEUED: "se envía ya",
+  WAITING_CONTACT: "espera a que escriba",
+  WAITING_WINDOW: "fuera de la ventana de 24 h",
+};
+
+const LINK_METHOD_LABELS: Record<string, string> = {
+  CODE: "por código",
+  USERNAME: "por usuario de Instagram",
+  MANUAL: "a mano",
+};
+
+function isTemplateKey(value: unknown): value is TemplateKey {
+  return typeof value === "string" && (TEMPLATE_KEYS as readonly string[]).includes(value);
+}
+
+function registroTexto(entry: AuditEntry): string | null {
+  if (entry.registro !== null) {
+    const { numero, nombre, instagram } = entry.registro;
+    return `#${formatRegistrationNumber(numero)} ${nombre} (@${instagram})`;
+  }
+  const number = entry.metadata.number;
+  if (typeof number === "number") {
+    return `#${formatRegistrationNumber(number)}`;
+  }
+  return null;
+}
+
+function detalleParts(entry: AuditEntry): Array<string | null> {
+  const { metadata } = entry;
+  switch (entry.action) {
+    case "REGISTRATION_CREATED":
+      return [registroTexto(entry), metadata.origin === "IMPORT" ? "importado" : "desde la web"];
+    case "PIECE_STATUS_CHANGED":
+    case "EXPEDIENTE_LINK_REGENERATED":
+    case "INSTAGRAM_ACTIVATION_SENT":
+    case "INSTAGRAM_MESSAGE_DISCARDED":
+    case "INSTAGRAM_MESSAGE_SENT_MANUALLY":
+    case "REGISTRATION_DELETED":
+      return [registroTexto(entry)];
+    case "INSTAGRAM_MESSAGE_QUEUED": {
+      const status = metadata.status;
+      return [
+        isTemplateKey(metadata.template) ? TEMPLATE_LABELS[metadata.template] : "mensaje libre",
+        typeof status === "string" ? (QUEUED_STATUS_LABELS[status] ?? null) : null,
+        metadata.via === "auto" ? "automático" : null,
+        registroTexto(entry),
+      ];
+    }
+    case "INSTAGRAM_CONTACT_LINKED": {
+      const by = metadata.by;
+      return [registroTexto(entry), typeof by === "string" ? (LINK_METHOD_LABELS[by] ?? null) : null];
+    }
+    case "INSTAGRAM_CHAT_DELETED":
+      return [
+        registroTexto(entry),
+        typeof metadata.deleted === "number" ? `${metadata.deleted} mensajes` : null,
+      ];
+    case "MESSAGE_TEMPLATE_UPDATED":
+      return [isTemplateKey(entry.entityId) ? TEMPLATE_LABELS[entry.entityId] : null];
+    case "REGISTRATIONS_IMPORTED":
+      return [
+        typeof metadata.created === "number" ? `${metadata.created} nuevos` : null,
+        typeof metadata.existing === "number" ? `${metadata.existing} ya estaban` : null,
+        typeof metadata.conflicts === "number" ? `${metadata.conflicts} en conflicto` : null,
+      ];
+    case "REGISTRATIONS_EXPORTED":
+      return [typeof metadata.count === "number" ? `${metadata.count} registros` : null];
+    case "ADMIN_SIGN_IN_FAILED":
+      return [metadata.reason === "locked" ? "cuenta bloqueada" : "contraseña incorrecta"];
+    default:
+      return [];
+  }
+}
+
+function detalleAuditoria(entry: AuditEntry): string | null {
+  const parts = detalleParts(entry).filter((part): part is string => part !== null);
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export default async function ActividadPage({
   searchParams,
 }: {
@@ -87,7 +174,9 @@ export default async function ActividadPage({
         <h1 className={TITULO}>Actividad</h1>
 
         <ul className={`border-t ${FILA}`}>
-          {resultado.items.map((entry) => (
+          {resultado.items.map((entry) => {
+            const detalle = detalleAuditoria(entry);
+            return (
             <li
               key={entry.id}
               className={`grid gap-1 border-b ${FILA} py-3 font-mono text-[13px] sm:grid-cols-[10rem_12rem_1fr] sm:gap-x-6`}
@@ -98,11 +187,26 @@ export default async function ActividadPage({
               <span className="min-w-0 break-words">
                 {entry.actorName ?? "Sistema"}
               </span>
-              <span className="min-w-0 break-words">
-                {formatAuditAction(entry)}
-              </span>
+              <div className="grid min-w-0 gap-1">
+                <span className="break-words">{formatAuditAction(entry)}</span>
+                {detalle === null ? null : (
+                  <span className="break-words text-tinta/60">
+                    {entry.registro === null ? (
+                      detalle
+                    ) : (
+                      <Link
+                        href={adminHref("/registros/" + entry.registro.id)}
+                        className={ENLACE}
+                      >
+                        {detalle}
+                      </Link>
+                    )}
+                  </span>
+                )}
+              </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
 
         <Paginacion

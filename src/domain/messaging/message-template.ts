@@ -1,6 +1,13 @@
 export const TEMPLATE_KEYS = ["BIENVENIDA", "CAMBIO_ESTADO", "RECORDATORIO_DROP", "ACTIVACION"] as const;
 export type TemplateKey = (typeof TEMPLATE_KEYS)[number];
 
+export const TEMPLATE_LABELS: Record<TemplateKey, string> = {
+  BIENVENIDA: "Bienvenida",
+  CAMBIO_ESTADO: "Cambio de estado",
+  RECORDATORIO_DROP: "Recordatorio del drop",
+  ACTIVACION: "Activación",
+};
+
 export const TEMPLATE_VARIABLES = ["nombre", "numero", "talla", "estado", "link", "fecha_drop"] as const;
 export const DROP_DATE_LABEL = "viernes 04.12 a las 19:00";
 

@@ -28,6 +28,7 @@ export type AuditEntry = {
   entityType: string;
   entityId: string | null;
   metadata: Record<string, unknown>;
+  registro: { id: string; numero: number; nombre: string; instagram: string } | null;
 };
 
 export interface AdminRegistroStore {

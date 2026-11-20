@@ -2,19 +2,12 @@ import { connection } from "next/server";
 
 import { listMessageTemplates } from "@/application/admin-registros/admin-registros";
 import { TransicionPagina } from "@/components/TransicionPagina";
-import { TEMPLATE_KEYS, type TemplateKey } from "@/domain/messaging/message-template";
+import { TEMPLATE_KEYS, TEMPLATE_LABELS } from "@/domain/messaging/message-template";
 import { adminRegistrosDependencies } from "@/infrastructure/admin/admin-registros-runtime";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 
 import { TITULO } from "../../ui";
 import { EditorPlantilla } from "./EditorPlantilla";
-
-const TEMPLATE_TITLES: Record<TemplateKey, string> = {
-  BIENVENIDA: "Bienvenida",
-  CAMBIO_ESTADO: "Cambio de estado",
-  RECORDATORIO_DROP: "Recordatorio del drop",
-  ACTIVACION: "Activación",
-};
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
   day: "numeric",
@@ -43,7 +36,7 @@ export default async function PlantillasPage() {
             <EditorPlantilla
               key={template.key}
               templateKey={template.key}
-              title={TEMPLATE_TITLES[template.key]}
+              title={TEMPLATE_LABELS[template.key]}
               initialBody={template.body}
               updatedAtLabel={dateFormatter.format(template.updatedAt)}
             />

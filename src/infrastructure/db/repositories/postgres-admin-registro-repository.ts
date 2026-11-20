@@ -51,6 +51,10 @@ interface AuditRow {
   entity_type: string;
   entity_id: string | null;
   metadata: Record<string, unknown>;
+  registro_id: string | null;
+  registro_numero: number | null;
+  registro_nombre: string | null;
+  registro_instagram: string | null;
 }
 
 function toAdminRegistro(row: RegistrationRow): AdminRegistroRow {
@@ -190,9 +194,12 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
   async listAudit(offset: number, limit: number): Promise<AuditEntry[]> {
     const result = await getPool().query<AuditRow>(
       `SELECT a.id, a.occurred_at, u.display_name AS actor_name, a.action,
-              a.entity_type, a.entity_id, a.metadata
+              a.entity_type, a.entity_id, a.metadata,
+              r.id AS registro_id, r.registration_number AS registro_numero,
+              r.full_name AS registro_nombre, r.instagram_handle AS registro_instagram
          FROM audit_logs a
          LEFT JOIN admin_users u ON u.id = a.actor_admin_id
+         LEFT JOIN registrations r ON a.entity_type = 'registration' AND r.id::text = a.entity_id
         ORDER BY a.id DESC LIMIT $2 OFFSET $1`,
       [offset, limit],
     );
@@ -204,6 +211,15 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
       entityType: row.entity_type,
       entityId: row.entity_id,
       metadata: row.metadata,
+      registro:
+        row.registro_id === null
+          ? null
+          : {
+              id: row.registro_id,
+              numero: row.registro_numero!,
+              nombre: row.registro_nombre!,
+              instagram: row.registro_instagram!,
+            },
     }));
   }
 }

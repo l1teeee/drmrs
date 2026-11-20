@@ -137,7 +137,7 @@ export async function exportRegistros(
   return rows;
 }
 
-const AUDIT_PAGE_SIZE = 50;
+const AUDIT_PAGE_SIZE = 20;
 
 export async function listAuditPage(page: number, deps: AdminRegistrosDependencies): Promise<Page<AuditEntry>> {
   const total = await deps.store.countAudit();
