@@ -4,15 +4,14 @@ export const archivoBlack = Archivo_Black({ weight: "400", subsets: ["latin"], d
 
 const specialElite = Special_Elite({ weight: "400", subsets: ["latin"], display: "swap", preload: false });
 
-const instrumentSerif = Instrument_Serif({
+export const instrumentSerif = Instrument_Serif({
   weight: "400",
   style: "italic",
   subsets: ["latin"],
   display: "swap",
-  preload: false,
 });
 
-const permanentMarker = Permanent_Marker({ weight: "400", subsets: ["latin"], display: "swap", preload: false });
+export const permanentMarker = Permanent_Marker({ weight: "400", subsets: ["latin"], display: "swap" });
 
 export const FUENTES_CICLO: readonly string[] = [
   specialElite.style.fontFamily,

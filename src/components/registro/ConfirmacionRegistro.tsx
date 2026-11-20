@@ -9,7 +9,7 @@ import { urlPerfilInstagram, usuarioDesdeEnlaceIgMe } from "@/lib/instagram/enla
 import { useEsMovil } from "@/lib/instagram/use-es-movil";
 import { enlaceWhatsappRegistro } from "@/lib/registro/enlaces";
 import { formatearNumeroRegistro, formatearTelefono } from "@/lib/registro/formato";
-import { archivoBlack, FUENTES_CICLO } from "./fuentes-numero";
+import { archivoBlack, FUENTES_CICLO } from "@/lib/fuentes";
 
 gsap.registerPlugin(useGSAP);
 

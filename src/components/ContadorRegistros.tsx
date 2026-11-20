@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 
+import { instrumentSerif } from "@/lib/fuentes";
 import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 import { getPublicRegistrationCount } from "@/infrastructure/registration/public-registration-count";
 
@@ -13,5 +14,9 @@ export async function ContadorRegistros() {
     return null;
   }
 
-  return <p className="mt-2 font-mono text-[12px] text-white/80">{total} en el registro</p>;
+  return (
+    <p className={`mt-2 ${instrumentSerif.className} text-[16px] text-white/80`}>
+      {total} en el registro
+    </p>
+  );
 }

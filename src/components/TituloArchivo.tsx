@@ -3,6 +3,8 @@
 import { useId, useState } from "react";
 import Image from "next/image";
 
+import { archivoBlack, permanentMarker } from "@/lib/fuentes";
+
 export function TituloArchivo() {
   const [abierto, setAbierto] = useState(false);
   const idDetalle = useId();
@@ -27,13 +29,13 @@ export function TituloArchivo() {
             className={`pointer-events-none absolute left-full top-1/2 ml-2 flex -translate-y-1/2 items-center gap-1 transition-opacity duration-300 motion-reduce:transition-none ${abierto ? "opacity-0" : "opacity-100"}`}
           >
             <svg viewBox="0 0 48 24" fill="none" className="h-5 w-10 text-white/80 motion-safe:animate-senala">
-              <path d="M46 6 C 34 2, 18 4, 6 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <path d="M6 14 L 13 13 M6 14 L 9 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M46 10 C 34 4, 20 12, 6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M6 12 L 12 8 M6 12 L 12 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <span className="whitespace-nowrap text-[12px] text-white/80">¿qué es?</span>
+            <span className={`${permanentMarker.className} whitespace-nowrap text-[13px] text-white/80`}>¿qué es?</span>
           </span>
         </div>
-        <h1 className="text-[clamp(28px,3vw,44px)] font-medium leading-none tracking-[-0.03em]">
+        <h1 className={`${archivoBlack.className} text-[clamp(28px,3vw,44px)] leading-none tracking-[-0.03em]`}>
           Archivo 001
         </h1>
       </div>
