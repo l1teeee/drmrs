@@ -108,20 +108,22 @@ export function ConfirmacionRegistro({
           "<",
         );
 
-        // Keeps changing the font now and then after the number settles.
+        // After the number settles, the font keeps changing without stopping.
         const cambio = { paso: 0 };
         gsap
-          .timeline({ repeat: -1, repeatDelay: 3.5, delay: linea.duration() + 1.5 })
+          .timeline({
+            repeat: -1,
+            delay: linea.duration(),
+            onRepeat: () => {
+              cambio.paso = 0;
+            },
+          })
           .to(cambio, {
             paso: FUENTES_CICLO.length,
-            duration: FUENTES_CICLO.length * CUADRO,
+            duration: FUENTES_CICLO.length * 0.18,
             ease: `steps(${FUENTES_CICLO.length})`,
             onUpdate: () => {
               destino.style.fontFamily = FUENTES_CICLO[Math.floor(cambio.paso) % FUENTES_CICLO.length]!;
-            },
-            onComplete: () => {
-              destino.style.fontFamily = "";
-              cambio.paso = 0;
             },
           });
       }
@@ -200,14 +202,10 @@ export function ConfirmacionRegistro({
         {instagram && telefono && (
           <p data-aparece className="mt-4 text-[16px] leading-[1.55] text-white/85">
             {instagramLink ? (
-              <>
-                Último paso: mándanos un mensaje por Instagram desde <b>@{instagram}</b> para recibir tu
-                bienvenida. Si no, te escribimos por WhatsApp al <b>{formatearTelefono(telefono)}</b>.
-              </>
+              <>Escríbenos por Instagram para recibir tu bienvenida.</>
             ) : (
               <>
-                Te mandaremos un mensaje por Instagram a <b>@{instagram}</b> para confirmar que tenemos tu
-                registro. Si no te llega, te escribimos por WhatsApp al <b>{formatearTelefono(telefono)}</b>.
+                Te avisamos por WhatsApp al <b>{formatearTelefono(telefono)}</b>.
               </>
             )}
           </p>
@@ -224,16 +222,15 @@ export function ConfirmacionRegistro({
             >
               Enviar mensaje por Instagram
             </a>
-            <p aria-live="polite" className="text-[13px] text-white/70">
-              {copiado ? "Mensaje copiado. Pégalo en el chat y envíalo." : "Te copiamos un mensaje corto para iniciar el chat."}
+            <p aria-live="polite" className="min-h-[1.25rem] text-[13px] text-white/70">
+              {copiado ? "Copiado. Pégalo y envíalo." : ""}
             </p>
           </div>
         )}
 
         {numero >= 1 && numero <= 10 && (
           <p data-aparece className="mt-3 text-[15px] leading-[1.55] text-white/85">
-            <b>Estás entre los primeros 10.</b> Tu pieza lleva tu mismo número de registro, apartada para
-            ti las primeras 24 horas del 04.12.
+            <b>Top 10.</b> Tu pieza lleva tu número y queda apartada 24 h el 04.12.
           </p>
         )}
 
@@ -243,12 +240,12 @@ export function ConfirmacionRegistro({
         >
           {expediente && (
             <Link href={expediente} className="underline underline-offset-4 hover:text-white/80">
-              Ver tu expediente →
+              Expediente →
             </Link>
           )}
           {telefono && (
             <button type="button" onClick={onCorregir} className="underline underline-offset-4 hover:text-white/80">
-              ¿Está mal? Corrígelo
+              Corregir
             </button>
           )}
           <a
@@ -257,15 +254,15 @@ export function ConfirmacionRegistro({
             rel="noopener noreferrer"
             className="underline underline-offset-4 hover:text-white/80"
           >
-            Mándanos un hola por WhatsApp →
+            WhatsApp →
           </a>
         </div>
 
         <p data-aparece className="mt-10 text-[12px] uppercase tracking-[0.12em] text-white/70">
-          Haz captura y súbela a tu historia con @drmrs.archive
+          Compártelo con @drmrs.archive
         </p>
         <Link data-aparece href="/" className="mt-6 text-[13px] text-white/70 hover:text-white">
-          ← volver al inicio
+          ← Inicio
         </Link>
       </div>
     </div>
