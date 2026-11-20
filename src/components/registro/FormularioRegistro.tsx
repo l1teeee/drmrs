@@ -45,6 +45,8 @@ type Campos = {
 
 type Resultado = {
   numero: number;
+  archivo: string;
+  archivoNumero: number;
   yaEstaba: boolean;
   telefono: string;
   instagram: string;
@@ -67,7 +69,7 @@ const CAMPOS_VACIOS: Campos = {
 };
 
 // Sample data for the dev-only success preview; never sent anywhere.
-const RESULTADO_DE_PRUEBA: Resultado = {
+const RESULTADO_DE_PRUEBA: Omit<Resultado, "archivo" | "archivoNumero"> = {
   numero: 23,
   yaEstaba: false,
   telefono: "4421234567",
@@ -81,7 +83,15 @@ function esperar(ms: number): Promise<void> {
   return new Promise((resolver) => setTimeout(resolver, ms));
 }
 
-export function FormularioRegistro() {
+type FormularioRegistroProps = {
+  drop: {
+    nombre: string;
+    numero: number;
+    aperturaCorta: string;
+  };
+};
+
+export function FormularioRegistro({ drop }: FormularioRegistroProps) {
   const [campos, setCampos] = useState<Campos>(CAMPOS_VACIOS);
   const [enviando, setEnviando] = useState(false);
   const [etiquetaBoton, setEtiquetaBoton] = useState(ETIQUETA_INICIAL);
@@ -146,6 +156,7 @@ export function FormularioRegistro() {
         respuesta = await enviarRegistro(datos);
         if (
           respuesta.ok ||
+          respuesta.error === "cerrado" ||
           respuesta.error === "datos" ||
           respuesta.error === "verificacion" ||
           respuesta.error === "instagram" ||
@@ -197,6 +208,8 @@ export function FormularioRegistro() {
     if (campos.web) {
       setResultado({
         numero: 0,
+        archivo: drop.nombre,
+        archivoNumero: drop.numero,
         yaEstaba: false,
         telefono: "",
         instagram: "",
@@ -235,6 +248,8 @@ export function FormularioRegistro() {
       // for the person it is still their first registration.
       setResultado({
         numero: respuesta.numero ?? 0,
+        archivo: respuesta.archivo ?? drop.nombre,
+        archivoNumero: respuesta.archivoNumero ?? drop.numero,
         yaEstaba: Boolean(respuesta.existente) && !huboReintento,
         telefono,
         instagram,
@@ -246,7 +261,9 @@ export function FormularioRegistro() {
     }
 
     reiniciar();
-    if (respuesta?.error === "datos") {
+    if (respuesta?.error === "cerrado") {
+      setError("El registro de este archivo está cerrado.");
+    } else if (respuesta?.error === "datos") {
       setError("Revisa tus datos: nombre, WhatsApp de 10 dígitos y talla.");
     } else if (respuesta?.error === "verificacion") {
       setError("No pudimos verificar que no eres bot. Intenta de nuevo.");
@@ -452,12 +469,18 @@ export function FormularioRegistro() {
         )}
 
         <p className="font-mono text-[12px] leading-[1.6] text-white/60 md:col-span-2">
-          antes del 04.12 te escribimos 3 veces por whatsapp: la fecha, el día antes y tu acceso.
+          antes del {drop.aperturaCorta} te escribimos 3 veces por whatsapp: la fecha, el día antes y tu acceso.
         </p>
         {process.env.NODE_ENV === "development" && (
           <button
             type="button"
-            onClick={() => setResultado(RESULTADO_DE_PRUEBA)}
+            onClick={() =>
+              setResultado({
+                ...RESULTADO_DE_PRUEBA,
+                archivo: drop.nombre,
+                archivoNumero: drop.numero,
+              })
+            }
             className="border border-dashed border-white/40 px-4 py-2 font-mono text-[12px] text-white/70 hover:text-white md:col-span-2"
           >
             Ver animación de éxito
@@ -468,6 +491,9 @@ export function FormularioRegistro() {
       {resultado && (
         <ConfirmacionRegistro
           numero={resultado.numero}
+          archivo={resultado.archivo}
+          archivoNumero={resultado.archivoNumero}
+          aperturaCorta={drop.aperturaCorta}
           yaEstaba={resultado.yaEstaba}
           telefono={resultado.telefono}
           instagram={resultado.instagram}

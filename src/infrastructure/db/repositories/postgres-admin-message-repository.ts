@@ -7,6 +7,7 @@ import type {
   ConversationMessage,
   ConversationSummary,
   EnqueueMessageResult,
+  LinkableContact,
   QueuedMessageStatus,
   RegistrationWindowState,
   UnlinkedContact,
@@ -17,6 +18,7 @@ import { isMessagingWindowOpen } from "@/domain/messaging/messaging-window";
 
 import { getPool } from "../client";
 import { inTransaction } from "../transaction";
+import { backfillContactMessages, linkSiblingRegistrations, releasePending } from "./postgres-messaging-repository";
 
 const transactionSettings = ["SET LOCAL lock_timeout = '3s'", "SET LOCAL statement_timeout = '5s'"];
 const mutableStatuses = new Set(["FAILED", "WAITING_CONTACT", "WAITING_WINDOW", "QUEUED"]);
@@ -109,19 +111,23 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     registrationId: string,
   ): Promise<{ kind: "done"; deleted: number } | { kind: "not_found" }> {
     return inTransaction(getPool(), transactionSettings, async (client) => {
-      const registration = await client.query("SELECT 1 FROM registrations WHERE id = $1 FOR UPDATE", [
-        registrationId,
-      ]);
-      if (registration.rows.length === 0) return { kind: "not_found" };
+      const registrations = await client.query<{ messaging_contact_id: string | null }>(
+        "SELECT messaging_contact_id FROM registrations WHERE id = $1 FOR UPDATE", [registrationId],
+      );
+      const registration = registrations.rows[0];
+      if (!registration) return { kind: "not_found" };
       const result = await client.query(
         `DELETE FROM messages
-          WHERE registration_id = $1
+          WHERE (registration_id = $1 OR ($2::uuid IS NOT NULL AND contact_id = $2))
             AND status NOT IN ('QUEUED', 'WAITING_CONTACT', 'WAITING_WINDOW')
             AND NOT (locked_until IS NOT NULL AND locked_until >= now())`,
-        [registrationId],
+        [registrationId, registration.messaging_contact_id],
       );
       const deleted = result.rowCount ?? 0;
-      await insertAudit(client, adminId, registrationId, "INSTAGRAM_CHAT_DELETED", { deleted });
+      await insertAudit(client, adminId, registrationId, "INSTAGRAM_CHAT_DELETED", {
+        deleted,
+        ...(registration.messaging_contact_id !== null ? { scope: "contact" } : {}),
+      });
       return { kind: "done", deleted };
     });
   }
@@ -173,45 +179,45 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
 
   linkContactManually(adminId: string, registrationId: string, contactId: string): Promise<AdminMessageMutationKind> {
     return inTransaction(getPool(), transactionSettings, async (client) => {
-      const contacts = await client.query<{ last_inbound_at: Date | null; now: Date }>(
-        "SELECT last_inbound_at, now() AS now FROM messaging_contacts WHERE id = $1 FOR UPDATE",
+      const contacts = await client.query<{ id: string; username: string | null }>(
+        "SELECT id, username FROM messaging_contacts WHERE id = $1 FOR UPDATE",
         [contactId],
       );
       const contact = contacts.rows[0];
       if (!contact) return "not_found";
-      const registrations = await client.query<{ messaging_contact_id: string | null }>(
-        "SELECT messaging_contact_id FROM registrations WHERE id = $1 FOR UPDATE",
+      const registrations = await client.query<{ messaging_contact_id: string | null; drop_id: string }>(
+        "SELECT messaging_contact_id, drop_id FROM registrations WHERE id = $1 FOR UPDATE",
         [registrationId],
       );
       const registration = registrations.rows[0];
       if (!registration) return "not_found";
       if (registration.messaging_contact_id) return "conflict";
-      const linked = await client.query("SELECT 1 FROM registrations WHERE messaging_contact_id = $1", [contactId]);
+      const linked = await client.query(
+        "SELECT 1 FROM registrations WHERE messaging_contact_id = $1 AND drop_id = $2",
+        [contactId, registration.drop_id],
+      );
       if (linked.rows.length > 0) return "conflict";
-      await client.query(
-        "UPDATE registrations SET messaging_contact_id = $2, contact_linked_by = 'MANUAL' WHERE id = $1",
-        [registrationId, contactId],
-      );
-      await client.query(
-        "UPDATE messages SET registration_id = $2 WHERE contact_id = $1 AND registration_id IS NULL",
-        [contactId, registrationId],
-      );
-      const open = isMessagingWindowOpen(contact.last_inbound_at, contact.now);
-      await client.query(
-        `UPDATE messages SET contact_id = $1, status = $2,
-                next_attempt_at = CASE WHEN $3::boolean THEN now() ELSE NULL END
-          WHERE registration_id = (SELECT id FROM registrations WHERE messaging_contact_id = $1)
-            AND direction = 'OUT' AND status = 'WAITING_CONTACT'`,
-        [contactId, open ? "QUEUED" : "WAITING_WINDOW", open],
-      );
-      if (open) {
+      await client.query("SAVEPOINT contact_link");
+      try {
         await client.query(
-          `UPDATE messages SET status = 'QUEUED', next_attempt_at = now()
-            WHERE contact_id = $1 AND direction = 'OUT' AND status = 'WAITING_WINDOW'`,
-          [contactId],
+          "UPDATE registrations SET messaging_contact_id = $2, contact_linked_by = 'MANUAL' WHERE id = $1",
+          [registrationId, contactId],
         );
+        await insertAudit(client, adminId, registrationId, "INSTAGRAM_CONTACT_LINKED", { by: "MANUAL" });
+        if (contact.username !== null) await linkSiblingRegistrations(client, contactId, contact.username, adminId);
+      } catch (error) {
+        if (
+          typeof error !== "object" || error === null ||
+          !("code" in error) || error.code !== "23505" ||
+          !("constraint" in error) || error.constraint !== "registrations_drop_contact_uq"
+        ) throw error;
+        await client.query("ROLLBACK TO SAVEPOINT contact_link");
+        await client.query("RELEASE SAVEPOINT contact_link");
+        return "conflict";
       }
-      await insertAudit(client, adminId, registrationId, "INSTAGRAM_CONTACT_LINKED", { by: "MANUAL" });
+      await client.query("RELEASE SAVEPOINT contact_link");
+      await backfillContactMessages(client, contactId);
+      await releasePending(client, contactId);
       return "done";
     });
   }
@@ -220,6 +226,8 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     const registrations = await getPool().query<{
       id: string;
       registration_number: number;
+      drop_number: number;
+      drop_name: string;
       full_name: string;
       instagram_handle: string;
       contact_linked_by: string | null;
@@ -229,23 +237,31 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
       instagram_activation_sent_at: Date | null;
     }>(
       `SELECT r.id, r.registration_number, r.full_name, r.instagram_handle, r.contact_linked_by,
+              d.number AS drop_number, d.name AS drop_name,
               c.username, c.last_inbound_at, r.ig_link_code, r.instagram_activation_sent_at
-         FROM registrations r LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
+         FROM registrations r JOIN drops d ON d.id = r.drop_id
+         LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
         WHERE r.id = $1`,
       [registrationId],
     );
     const registration = registrations.rows[0];
     if (!registration) return null;
     const messages = await getPool().query<ConversationMessage>(
-      `SELECT id, direction, source, status, body, "templateKey", "createdAt", "sentAt", "receivedAt", "readAt", "lastError"
+      `SELECT id, "registrationId", "dropNumber", direction, source, status, body,
+              "templateKey", "createdAt", "sentAt", "receivedAt", "readAt", "lastError"
          FROM (
-           SELECT id, direction, source, status, body, template_key AS "templateKey",
-                  created_at AS "createdAt", sent_at AS "sentAt", received_at AS "receivedAt",
-                  read_at AS "readAt", last_error AS "lastError",
-                  COALESCE(sent_at, received_at, created_at) AS orden,
-                  status IN ('QUEUED', 'WAITING_CONTACT', 'WAITING_WINDOW') AS pendiente
-             FROM messages WHERE registration_id = $1
-            ORDER BY pendiente DESC, orden DESC, id DESC
+           SELECT m.id, m.registration_id AS "registrationId", md.number AS "dropNumber",
+                  m.direction, m.source, m.status, m.body, m.template_key AS "templateKey",
+                  m.created_at AS "createdAt", m.sent_at AS "sentAt", m.received_at AS "receivedAt",
+                  m.read_at AS "readAt", m.last_error AS "lastError",
+                  COALESCE(m.sent_at, m.received_at, m.created_at) AS orden,
+                  m.status IN ('QUEUED', 'WAITING_CONTACT', 'WAITING_WINDOW') AS pendiente
+             FROM registrations r
+             JOIN messages m ON (m.registration_id = r.id OR (r.messaging_contact_id IS NOT NULL AND m.contact_id = r.messaging_contact_id))
+             LEFT JOIN registrations mr ON mr.id = m.registration_id
+             LEFT JOIN drops md ON md.id = mr.drop_id
+            WHERE r.id = $1
+            ORDER BY pendiente DESC, orden DESC, m.id DESC
             LIMIT 200
          ) ultimos
         ORDER BY pendiente ASC, orden ASC, id ASC`,
@@ -255,6 +271,8 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
       registration: {
         id: registration.id,
         registrationNumber: registration.registration_number,
+        dropNumber: registration.drop_number,
+        dropName: registration.drop_name,
         fullName: registration.full_name,
         instagramHandle: registration.instagram_handle,
         linkedBy: registration.contact_linked_by,
@@ -270,11 +288,13 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
   async listUnsentMessages(): Promise<UnsentMessage[]> {
     const result = await getPool().query<UnsentMessage>(
       `SELECT m.id, m.registration_id AS "registrationId", r.registration_number AS "registrationNumber",
+              d.number AS "dropNumber", d.name AS "dropName",
               r.full_name AS "fullName", r.instagram_handle AS "instagramHandle",
               m.status, m.body, m.attempts, m.last_error AS "lastError", m.created_at AS "createdAt",
               c.last_inbound_at AS "lastInboundAt",
               r.instagram_activation_sent_at AS "activationSentAt"
          FROM messages m JOIN registrations r ON r.id = m.registration_id
+         JOIN drops d ON d.id = r.drop_id
          LEFT JOIN messaging_contacts c ON c.id = r.messaging_contact_id
         WHERE m.direction = 'OUT'
           AND (m.status IN ('FAILED', 'WAITING_CONTACT', 'WAITING_WINDOW')
@@ -301,26 +321,62 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
     return result.rows;
   }
 
+  async listLinkableContacts(registrationId: string): Promise<LinkableContact[]> {
+    const result = await getPool().query<LinkableContact>(
+      `SELECT c.id, c.username, c.display_name AS "displayName", c.last_inbound_at AS "lastInboundAt",
+              preview.body AS "lastInboundText",
+              COALESCE((
+                SELECT array_agg(lpad(d.number::text, 3, '0') || '·' || lpad(r.registration_number::text, 4, '0')
+                                 ORDER BY d.number, r.registration_number)
+                  FROM registrations r JOIN drops d ON d.id = r.drop_id
+                 WHERE r.messaging_contact_id = c.id
+              ), '{}'::text[]) AS "linkedTags"
+         FROM messaging_contacts c
+         LEFT JOIN LATERAL (
+           SELECT left(m.body, 80) AS body FROM messages m
+            WHERE m.contact_id = c.id AND m.direction = 'IN'
+            ORDER BY m.created_at DESC, m.id DESC LIMIT 1
+         ) preview ON true
+        WHERE c.last_inbound_at >= now() - interval '30 days'
+          AND NOT EXISTS (
+            SELECT 1 FROM registrations x WHERE x.messaging_contact_id = c.id
+              AND x.drop_id = (SELECT drop_id FROM registrations WHERE id = $1)
+          )
+        ORDER BY c.last_inbound_at DESC, c.id LIMIT 200`,
+      [registrationId],
+    );
+    return result.rows;
+  }
+
   async listConversations(): Promise<ConversationSummary[]> {
     const result = await getPool().query<ConversationSummary>(
       `WITH ultimos AS (
-         SELECT DISTINCT ON (COALESCE(m.registration_id::text, 'c:' || m.contact_id::text))
+         SELECT DISTINCT ON (COALESCE(m.contact_id::text, 'r:' || m.registration_id::text))
+                COALESCE(m.contact_id::text, 'r:' || m.registration_id::text) AS chat_key,
                 m.registration_id, m.contact_id, m.direction, m.body, m.created_at
            FROM messages m
           WHERE m.registration_id IS NOT NULL OR m.contact_id IS NOT NULL
-          ORDER BY COALESCE(m.registration_id::text, 'c:' || m.contact_id::text), m.created_at DESC, m.id DESC
+          ORDER BY COALESCE(m.contact_id::text, 'r:' || m.registration_id::text), m.created_at DESC, m.id DESC
        )
-       SELECT u.registration_id AS "registrationId",
-              CASE WHEN u.registration_id IS NULL THEN u.contact_id END AS "contactId",
+       SELECT r.id AS "registrationId",
+              CASE WHEN r.id IS NULL THEN u.contact_id END AS "contactId",
               r.registration_number AS "registrationNumber", r.full_name AS "fullName",
+              r.drop_number AS "dropNumber", r.drop_name AS "dropName",
               r.instagram_handle AS "instagramHandle",
               c.username AS "contactUsername", c.display_name AS "contactDisplayName",
               u.direction AS "lastDirection", left(u.body, 140) AS "lastBody", u.created_at AS "lastAt",
               (SELECT count(*)::int FROM messages x
-                WHERE (u.registration_id IS NOT NULL AND x.registration_id = u.registration_id)
-                   OR (u.registration_id IS NULL AND x.registration_id IS NULL AND x.contact_id = u.contact_id)) AS total
+                WHERE (u.contact_id IS NOT NULL AND x.contact_id = u.contact_id)
+                   OR (u.contact_id IS NULL AND x.contact_id IS NULL AND x.registration_id = u.registration_id)) AS total
          FROM ultimos u
-         LEFT JOIN registrations r ON r.id = u.registration_id
+         LEFT JOIN LATERAL (
+           SELECT r.id, r.registration_number, r.full_name, r.instagram_handle,
+                  d.number AS drop_number, d.name AS drop_name
+             FROM registrations r JOIN drops d ON d.id = r.drop_id
+            WHERE (u.contact_id IS NOT NULL AND r.messaging_contact_id = u.contact_id)
+               OR (u.contact_id IS NULL AND r.id = u.registration_id)
+            ORDER BY d.number DESC LIMIT 1
+         ) r ON true
          LEFT JOIN messaging_contacts c ON c.id = u.contact_id
         ORDER BY u.created_at DESC`,
     );

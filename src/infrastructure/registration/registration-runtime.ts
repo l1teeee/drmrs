@@ -9,6 +9,7 @@ import { expedienteCodes } from "../crypto/expediente-code";
 import { postgresInstagramConnectionRepository } from "../db/repositories/postgres-instagram-connection-repository";
 import { postgresPiecePhotoRepository } from "../db/repositories/postgres-piece-photo-repository";
 import { postgresRegistrationRepository } from "../db/repositories/postgres-registration-repository";
+import { postgresDropRepository } from "../db/repositories/postgres-drop-repository";
 import { queueWelcomeMessage } from "../messaging/welcome-message";
 import { log, safeErrorCode } from "../observability/logger";
 import { consume, RATE_LIMITS } from "../rate-limit/postgres-rate-limiter";
@@ -45,6 +46,7 @@ async function queueWelcomeAfterResponse(registrationId: string): Promise<void> 
 export function registrationDependencies(): SubmitRegistrationDependencies {
   return {
     store: postgresRegistrationRepository,
+    drops: postgresDropRepository,
     codes: expedienteCodes,
     instagramLinkFor,
     queueWelcome: queueWelcomeAfterResponse,

@@ -66,7 +66,7 @@ export default async function SinVincularPage({ searchParams }: { searchParams: 
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <p className={ETIQUETA}>Vincúlalo desde la conversación del registro.</p>
                       <Link
-                        href={adminHref(`/registros?q=${encodeURIComponent(contact.username)}`)}
+                          href={adminHref(`/registros?q=${encodeURIComponent(contact.username)}&drop=todos`)}
                         className={`${ENLACE} text-[13px]`}
                       >
                         Buscar registro

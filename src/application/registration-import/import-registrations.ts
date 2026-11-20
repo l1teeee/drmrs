@@ -33,6 +33,7 @@ export async function previewImport(
   csvText: string,
   adminId: string,
   deps: RegistrationImportDependencies,
+  dropId: string,
 ): Promise<PreviewResult> {
   const limit = await deps.checkPreview(adminId);
   if (!limit.allowed) return { ok: false, reason: "rate_limited" };
@@ -40,7 +41,7 @@ export async function previewImport(
   const parsed = parseImport(csvText);
   if (!parsed.ok) return parsed;
 
-  const classified = await deps.store.classify(parsed.rows);
+  const classified = await deps.store.classify(parsed.rows, dropId);
   const rows: PreviewRow[] = [...classified];
   for (const row of parsed.invalid) rows.push({ ...row, status: "invalid" });
   rows.sort((left, right) => left.line - right.line);
@@ -53,6 +54,7 @@ export async function runImport(
   csvText: string,
   adminId: string,
   deps: RegistrationImportDependencies,
+  dropId: string,
 ): Promise<RunResult> {
   const limit = await deps.checkRun(adminId);
   if (!limit.allowed) return { ok: false, reason: "rate_limited" };
@@ -60,6 +62,7 @@ export async function runImport(
   const parsed = parseImport(csvText);
   if (!parsed.ok) return parsed;
 
-  const summary = await deps.store.insertNew(adminId, parsed.rows);
+  const summary = await deps.store.insertNew(adminId, parsed.rows, dropId);
+  if ("kind" in summary) return { ok: false, reason: summary.kind };
   return { ok: true, summary: { ...summary, invalid: parsed.invalid.length } };
 }

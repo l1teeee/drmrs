@@ -41,36 +41,86 @@ function linkCodeFromEvent(event: InstagramWebhookEvent): string | null {
   return event.text ? extractLinkCode(event.text) : null;
 }
 
-async function finishLink(
+export async function linkSiblingRegistrations(
   client: PoolClient,
-  registrationId: string,
   contactId: string,
-  by: "CODE" | "USERNAME",
-): Promise<void> {
-  await client.query(
-    `INSERT INTO audit_logs (actor_admin_id, action, entity_type, entity_id, metadata)
-     VALUES (NULL, 'INSTAGRAM_CONTACT_LINKED', 'registration', $1, $2::jsonb)`,
-    [registrationId, JSON.stringify({ by })],
+  username: string,
+  adminId: string | null = null,
+): Promise<number> {
+  const linked = await client.query<{ id: string; drop_id: string }>(
+    `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'USERNAME', updated_at = now()
+       WHERE instagram_handle = $2 AND messaging_contact_id IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM registrations o
+           WHERE o.messaging_contact_id = $1 AND o.drop_id = registrations.drop_id
+         )
+     RETURNING id, drop_id`,
+    [contactId, username],
   );
+  for (const registration of linked.rows) {
+    await client.query(
+      `INSERT INTO audit_logs (actor_admin_id, action, entity_type, entity_id, metadata)
+       VALUES ($1, 'INSTAGRAM_CONTACT_LINKED', 'registration', $2, '{"by":"USERNAME"}'::jsonb)`,
+      [adminId, registration.id],
+    );
+  }
+  return linked.rows.length;
+}
+
+export async function backfillContactMessages(client: PoolClient, contactId: string): Promise<void> {
   await client.query(
-    "UPDATE messages SET registration_id = $2 WHERE contact_id = $1 AND registration_id IS NULL",
-    [contactId, registrationId],
+    `UPDATE messages SET registration_id = (
+       SELECT r.id FROM registrations r JOIN drops d ON d.id = r.drop_id
+       WHERE r.messaging_contact_id = $1 ORDER BY d.number DESC LIMIT 1
+     ) WHERE contact_id = $1 AND registration_id IS NULL`,
+    [contactId],
   );
 }
 
 async function linkByCode(client: PoolClient, contactId: string, code: string): Promise<void> {
-  const result = await client.query<{ id: string }>(
-    `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'CODE'
-       WHERE ig_link_code = $2 AND messaging_contact_id IS NULL
-         AND NOT EXISTS (SELECT 1 FROM registrations WHERE messaging_contact_id = $1)
-     RETURNING id`,
-    [contactId, code],
+  const contacts = await client.query<{ id: string; username: string | null }>(
+    "SELECT id, username FROM messaging_contacts WHERE id = $1 FOR UPDATE", [contactId],
   );
-  const registration = result.rows[0];
-  if (registration) await finishLink(client, registration.id, contactId, "CODE");
+  const contact = contacts.rows[0];
+  if (!contact) return;
+  await client.query("SAVEPOINT contact_link");
+  try {
+    const result = await client.query<{ id: string }>(
+      `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'CODE'
+         WHERE ig_link_code = $2 AND messaging_contact_id IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM registrations o
+             WHERE o.messaging_contact_id = $1 AND o.drop_id = registrations.drop_id
+           )
+       RETURNING id`,
+      [contactId, code],
+    );
+    const registration = result.rows[0];
+    if (!registration) {
+      await client.query("RELEASE SAVEPOINT contact_link");
+      return;
+    }
+    await client.query(
+      `INSERT INTO audit_logs (actor_admin_id, action, entity_type, entity_id, metadata)
+       VALUES (NULL, 'INSTAGRAM_CONTACT_LINKED', 'registration', $1, '{"by":"CODE"}'::jsonb)`,
+      [registration.id],
+    );
+    if (contact.username !== null) await linkSiblingRegistrations(client, contactId, contact.username);
+  } catch (error) {
+    if (
+      typeof error !== "object" || error === null ||
+      !("code" in error) || error.code !== "23505" ||
+      !("constraint" in error) || error.constraint !== "registrations_drop_contact_uq"
+    ) throw error;
+    await client.query("ROLLBACK TO SAVEPOINT contact_link");
+    await client.query("RELEASE SAVEPOINT contact_link");
+    return;
+  }
+  await client.query("RELEASE SAVEPOINT contact_link");
+  await backfillContactMessages(client, contactId);
 }
 
-async function releasePending(client: PoolClient, contactId: string): Promise<number> {
+export async function releasePending(client: PoolClient, contactId: string): Promise<number> {
   const result = await client.query<{ last_inbound_at: Date | null; now: Date }>(
     "SELECT last_inbound_at, now() AS now FROM messaging_contacts WHERE id = $1",
     [contactId],
@@ -82,7 +132,7 @@ async function releasePending(client: PoolClient, contactId: string): Promise<nu
     `UPDATE messages
         SET contact_id = $1, status = $2,
             next_attempt_at = CASE WHEN $3::boolean THEN now() ELSE NULL END
-      WHERE registration_id = (SELECT id FROM registrations WHERE messaging_contact_id = $1)
+      WHERE registration_id IN (SELECT id FROM registrations WHERE messaging_contact_id = $1)
         AND direction = 'OUT' AND status = 'WAITING_CONTACT'`,
     [contactId, open ? "QUEUED" : "WAITING_WINDOW", open],
   );
@@ -126,7 +176,8 @@ async function ingestEvent(
          registration_id, contact_id, direction, source, status, body,
          external_message_id, received_at, created_at
        ) VALUES (
-         (SELECT id FROM registrations WHERE messaging_contact_id = $1),
+         (SELECT r.id FROM registrations r JOIN drops d ON d.id = r.drop_id
+          WHERE r.messaging_contact_id = $1 ORDER BY d.number DESC LIMIT 1),
          $1, 'IN', 'CONTACT', 'RECEIVED', $2, $3, now(), $4
        ) ON CONFLICT (external_message_id) WHERE external_message_id IS NOT NULL DO NOTHING`,
       [contact.id, event.text || "[adjunto]", event.externalMessageId, event.timestamp],
@@ -153,7 +204,8 @@ async function ingestEvent(
          registration_id, contact_id, direction, source, status, body,
          external_message_id, sent_at, created_at
        ) VALUES (
-         (SELECT id FROM registrations WHERE messaging_contact_id = $1),
+         (SELECT r.id FROM registrations r JOIN drops d ON d.id = r.drop_id
+          WHERE r.messaging_contact_id = $1 ORDER BY d.number DESC LIMIT 1),
          $1, 'OUT', 'INSTAGRAM_APP', 'SENT', $2, $3, $4, $4
        ) ON CONFLICT (external_message_id) WHERE external_message_id IS NOT NULL DO NOTHING`,
       [contact.id, event.text || "[adjunto]", event.externalMessageId, event.timestamp],
@@ -239,19 +291,11 @@ export class PostgresMessagingRepository implements InstagramEventRepository {
 
   linkByUsername(contactId: string, username: string): Promise<number> {
     return inTransaction(getPool(), transactionSettings, async (client) => {
-      const contact = await client.query("SELECT id FROM messaging_contacts WHERE id = $1 FOR UPDATE", [contactId]);
+      const contact = await client.query("SELECT id, username FROM messaging_contacts WHERE id = $1 FOR UPDATE", [contactId]);
       if (contact.rows.length === 0) return 0;
-      const linked = await client.query<{ id: string }>(
-        `UPDATE registrations SET messaging_contact_id = $1, contact_linked_by = 'USERNAME'
-           WHERE instagram_handle = $2 AND messaging_contact_id IS NULL
-             AND (SELECT count(*) FROM registrations WHERE instagram_handle = $2) = 1
-             AND NOT EXISTS (SELECT 1 FROM registrations WHERE messaging_contact_id = $1)
-         RETURNING id`,
-        [contactId, username],
-      );
-      const registration = linked.rows[0];
-      if (!registration) return 0;
-      await finishLink(client, registration.id, contactId, "USERNAME");
+      const linked = await linkSiblingRegistrations(client, contactId, username);
+      if (linked === 0) return 0;
+      await backfillContactMessages(client, contactId);
       return releasePending(client, contactId);
     });
   }

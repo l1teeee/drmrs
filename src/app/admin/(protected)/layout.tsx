@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { connection } from "next/server";
+import { Suspense } from "react";
 
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
@@ -10,6 +11,8 @@ import { AutoRefresco } from "./AutoRefresco";
 import { ContenidoAdmin } from "./ContenidoAdmin";
 import { NavArchivo } from "./NavArchivo";
 import { signOut } from "./actions";
+import { selectedDrop } from "./drop-seleccionado";
+import { SelectorDrop } from "./SelectorDrop";
 
 const MARGEN_X = "px-[clamp(16px,4vw,56px)]";
 const MARGEN_CONTENIDO = "px-[max(clamp(16px,4vw,56px),calc((100%_-_1200px)/2))]";
@@ -19,12 +22,14 @@ const NAV_ITEMS = [
   { href: adminHref("/mensajes"), label: "Mensajes" },
   { href: adminHref("/registros/importar"), label: "Importar" },
   { href: adminHref("/plantillas"), label: "Plantillas" },
+  { href: adminHref("/drops"), label: "Drops" },
   { href: adminHref("/actividad"), label: "Actividad" },
 ];
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
   await connection();
   const admin = await requireAdmin("page");
+  const { drops, selected, scope } = await selectedDrop();
 
   return (
     <div className="flex min-h-dvh flex-col md:h-dvh md:min-h-0">
@@ -35,7 +40,9 @@ export default async function ProtectedLayout({ children }: { children: React.Re
             <Image src="/drmr-logo.svg" alt="drmr" width={177} height={72} preload className="h-[22px] w-auto" />
           </Link>
           <div className="flex min-w-0 flex-wrap items-baseline justify-end gap-x-4 gap-y-1">
-            <span className="font-mono text-[12px] text-tinta/80">Archivo 001</span>
+            <Suspense fallback={null}>
+              <SelectorDrop drops={drops.map((drop) => ({ id: drop.id, label: drop.name }))} value={scope === "todos" ? "todos" : selected?.id} />
+            </Suspense>
             <span className="max-w-[14rem] truncate text-[12px] text-tinta/70">{admin.displayName}</span>
             <form action={signOut}>
               <button type="submit" className={`text-[12px] ${ENLACE}`}>

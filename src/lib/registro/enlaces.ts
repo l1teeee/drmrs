@@ -1,11 +1,11 @@
 import { WHATSAPP_DRMR } from "./config";
 import { formatearNumeroRegistro } from "./formato";
 
-export function enlaceWhatsappRegistro(numero: number): string {
+export function enlaceWhatsappRegistro(numero: number, archivo: string): string {
   const hola =
     "Hola, soy el Registro No. " +
     (numero ? formatearNumeroRegistro(numero) : "") +
-    " del archivo.";
+    ` del ${archivo}.`;
   return "https://wa.me/" + WHATSAPP_DRMR + "?text=" + encodeURIComponent(hola);
 }
 

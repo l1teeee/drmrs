@@ -1,12 +1,90 @@
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { ContadorRegistros } from "@/components/ContadorRegistros";
 import { CuentaRegresiva } from "@/components/CuentaRegresiva";
+import { FolioArchivo } from "@/components/FolioArchivo";
 import { TituloArchivo } from "@/components/TituloArchivo";
+import { getPublicCurrentDrop } from "@/infrastructure/drops/public-current-drop";
+import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 import { INSTAGRAM_URL, TIKTOK_URL } from "@/lib/archivo";
+import { toDropPublico } from "@/lib/drop-publico";
 
 const ENLACE_PIE = "hover:text-white";
+const CLASE_FOLIO = "font-mono text-[13px] text-white/80";
+
+async function SeccionArchivo() {
+  await connection();
+  let drop;
+  try {
+    drop = await getPublicCurrentDrop();
+  } catch (error) {
+    log("error", "public_drop_failed", { code: safeErrorCode(error) });
+    return (
+      <p className="text-[16px] text-white/80">
+        No pudimos cargar el archivo. Intenta de nuevo en un momento.
+      </p>
+    );
+  }
+
+  const dropPublico = toDropPublico(drop);
+
+  if (dropPublico.estado === "SIN_DROP") {
+    return <p className="text-[16px] text-white/80">El registro está cerrado.</p>;
+  }
+
+  if (dropPublico.estado === "CERRADO") {
+    return (
+      <div>
+        <TituloArchivo nombre={dropPublico.nombre!} piezas={dropPublico.piezas!} abierto={false} />
+        <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
+          {dropPublico.aperturaTitular}
+        </p>
+        <p className="mt-6 text-[16px] text-white/80">
+          El registro de {dropPublico.nombre} está cerrado.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <TituloArchivo nombre={dropPublico.nombre!} piezas={dropPublico.piezas!} abierto={true} />
+      <div className="mt-5 text-[clamp(28px,8.5vw,56px)] md:text-[clamp(56px,6vw,92px)] font-extralight leading-none tracking-[-0.04em]">
+        <CuentaRegresiva objetivoIso={dropPublico.aperturaIso!} />
+      </div>
+      <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
+        {dropPublico.aperturaTitular}
+      </p>
+      <Suspense fallback={null}>
+        <ContadorRegistros dropId={dropPublico.id!} />
+      </Suspense>
+      <Link
+        href="/registro"
+        className="group relative mt-10 inline-flex items-center gap-5 overflow-hidden border border-white px-6 py-4 text-white transition-colors duration-300 hover:text-azul focus-visible:text-azul focus-visible:outline-none motion-reduce:transition-none"
+      >
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 origin-left scale-x-0 bg-white transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
+        />
+        <span className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          <span className="text-[16px] font-medium">Entrar al registro</span>
+          <span aria-hidden="true" className="hidden h-4 w-px bg-current opacity-40 sm:block" />
+          <span className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-75">
+            24 h antes · gratis
+          </span>
+        </span>
+        <span
+          aria-hidden="true"
+          className="relative text-[20px] transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
+        >
+          →
+        </span>
+      </Link>
+    </div>
+  );
+}
 
 export function Inicio() {
   return (
@@ -21,44 +99,15 @@ export function Inicio() {
           preload
           className="h-[30px] w-auto brightness-0 invert"
         />
-        <span className="font-mono text-[13px] text-white/80">Exp. 001</span>
+        <Suspense fallback={<span className={CLASE_FOLIO}>Exp.</span>}>
+          <FolioArchivo className={CLASE_FOLIO} />
+        </Suspense>
       </header>
 
       <section className="grid place-items-center text-center">
-        <div>
-          <TituloArchivo />
-          <div className="mt-5 text-[clamp(28px,8.5vw,56px)] md:text-[clamp(56px,6vw,92px)] font-extralight leading-none tracking-[-0.04em]">
-            <CuentaRegresiva />
-          </div>
-          <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
-            Viernes 4 de diciembre · 19:00
-          </p>
-          <Suspense fallback={null}>
-            <ContadorRegistros />
-          </Suspense>
-          <Link
-            href="/registro"
-            className="group relative mt-10 inline-flex items-center gap-5 overflow-hidden border border-white px-6 py-4 text-white transition-colors duration-300 hover:text-azul focus-visible:text-azul focus-visible:outline-none motion-reduce:transition-none"
-          >
-            <span
-              aria-hidden="true"
-              className="absolute inset-0 origin-left scale-x-0 bg-white transition-transform duration-300 ease-out group-hover:scale-x-100 group-focus-visible:scale-x-100 motion-reduce:transition-none"
-            />
-            <span className="relative flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-              <span className="text-[16px] font-medium">Entrar al registro</span>
-              <span aria-hidden="true" className="hidden h-4 w-px bg-current opacity-40 sm:block" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-75">
-                24 h antes · gratis
-              </span>
-            </span>
-            <span
-              aria-hidden="true"
-              className="relative text-[20px] transition-transform duration-300 group-hover:translate-x-1 motion-reduce:transition-none"
-            >
-              →
-            </span>
-          </Link>
-        </div>
+        <Suspense fallback={<div aria-hidden="true" className="min-h-[40vh]" />}>
+          <SeccionArchivo />
+        </Suspense>
       </section>
 
       <footer className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 border-t border-white/30 pt-5 text-[13px]">

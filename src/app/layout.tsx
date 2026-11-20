@@ -14,9 +14,9 @@ const maquina = Courier_Prime({
 });
 
 const siteTitle =
-  "drmrs archive · Archivo 001 · crewnecks numerados hechos a mano en Querétaro";
+  "drmrs archive · crewnecks numerados hechos a mano en Querétaro";
 const siteDescription =
-  "Archivo 001 de drmr: 50 crewnecks numerados y personalizados a mano en Querétaro. Regístrate gratis y entra 24 h antes al drop del 04.12.";
+  "Crewnecks numerados y personalizados a mano en Querétaro. Regístrate gratis y entra 24 h antes a los drops de drmr.";
 
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://drmr.com.mx");
 
@@ -28,11 +28,9 @@ export const metadata: Metadata = {
   keywords: [
     "drmr",
     "drmrs archive",
-    "Archivo 001",
     "streetwear Querétaro",
     "crewneck numerado",
     "ropa hecha a mano México",
-    "drop 04.12",
   ],
   openGraph: {
     type: "website",

@@ -1,7 +1,6 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { FECHA_APERTURA } from "@/lib/archivo";
 import { calcularCuentaRegresiva } from "@/lib/cuenta-regresiva";
 
 function suscribirCadaSegundo(avisar: () => void): () => void {
@@ -18,7 +17,11 @@ function sinSegundoEnServidor(): null {
   return null;
 }
 
-export function CuentaRegresiva() {
+type CuentaRegresivaProps = {
+  objetivoIso: string;
+};
+
+export function CuentaRegresiva({ objetivoIso }: CuentaRegresivaProps) {
   const segundo = useSyncExternalStore<number | null>(
     suscribirCadaSegundo,
     segundoActual,
@@ -29,7 +32,7 @@ export function CuentaRegresiva() {
     return <p className="tabular-nums">--d --h --m --s</p>;
   }
 
-  const estado = calcularCuentaRegresiva(new Date(segundo * 1000), FECHA_APERTURA);
+  const estado = calcularCuentaRegresiva(new Date(segundo * 1000), new Date(objetivoIso));
   if (estado.abierto) {
     return <p>El archivo ya está abierto</p>;
   }

@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import type { ConversationMessage } from "@/application/messaging/admin-messages";
+import { formatDropNumber } from "@/domain/drop/drop";
 
 import { ETIQUETA } from "../../../ui";
 
@@ -37,7 +38,7 @@ function bubbleClass(message: ConversationMessage): string {
   return `${BASE_BURBUJA} bg-azul text-white`;
 }
 
-function metaLabel(message: ConversationMessage): string {
+function metaLabel(message: ConversationMessage, currentDropNumber: number): string {
   const parts = [dateFormatter.format(message.sentAt ?? message.receivedAt ?? message.createdAt)];
   if (message.direction === "OUT") {
     if (message.source === "INSTAGRAM_APP") {
@@ -48,10 +49,11 @@ function metaLabel(message: ConversationMessage): string {
     }
     if (message.readAt) parts.push("visto");
   }
+  if (message.dropNumber !== null && message.dropNumber !== currentDropNumber) parts.push(`archivo ${formatDropNumber(message.dropNumber)}`);
   return parts.join(" · ");
 }
 
-export function MensajeChat({ message }: { message: ConversationMessage }) {
+export function MensajeChat({ message, currentDropNumber }: { message: ConversationMessage; currentDropNumber: number }) {
   const isLeft = message.direction === "IN";
 
   return (
@@ -83,7 +85,7 @@ export function MensajeChat({ message }: { message: ConversationMessage }) {
       )}
       <div className={`grid max-w-[85%] md:max-w-[70%] gap-1 ${isLeft ? "" : "justify-items-end"}`}>
         <p className={bubbleClass(message)}>{message.body}</p>
-        <span className={`${ETIQUETA} [overflow-wrap:anywhere]`}>{metaLabel(message)}</span>
+        <span className={`${ETIQUETA} [overflow-wrap:anywhere]`}>{metaLabel(message, currentDropNumber)}</span>
       </div>
     </li>
   );

@@ -17,7 +17,11 @@ const VISTAS = [
 
 const DISTANCIA_DESLIZAR = 40;
 
-export function CarruselPrenda() {
+type CarruselPrendaProps = {
+  aperturaCorta: string;
+};
+
+export function CarruselPrenda({ aperturaCorta }: CarruselPrendaProps) {
   const [actual, setActual] = useState(0);
   const inicioArrastre = useRef<number | null>(null);
 
@@ -94,7 +98,7 @@ export function CarruselPrenda() {
         </button>
       </div>
 
-      <p className="opacity-80">boceto de taller. el gráfico real se revela antes del 04.12.</p>
+      <p className="opacity-80">boceto de taller. el gráfico real se revela antes del {aperturaCorta}.</p>
     </section>
   );
 }

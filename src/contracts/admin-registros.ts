@@ -4,6 +4,7 @@ import { TEMPLATE_KEYS } from "@/domain/messaging/message-template";
 import { PIECE_STATUSES, SIZES } from "@/domain/registration/registration";
 
 export const listFiltersSchema = z.object({
+  dropId: z.uuid().optional(),
   q: z.string().trim().max(60).optional(),
   estado: z.enum(PIECE_STATUSES).optional(),
   talla: z.enum(SIZES).optional(),

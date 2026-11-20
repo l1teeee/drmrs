@@ -3,6 +3,11 @@ import type { TemplateKey } from "@/domain/messaging/message-template";
 import type { PieceStatus, Size } from "@/domain/registration/registration";
 
 export type AdminRegistroRow = {
+  dropId: string;
+  dropNumber: number;
+  dropName: string;
+  dropRegisteredOpensAt: Date;
+  dropPublicOpensAt: Date;
   id: string;
   registrationNumber: number;
   fullName: string;
@@ -28,7 +33,7 @@ export type AuditEntry = {
   entityType: string;
   entityId: string | null;
   metadata: Record<string, unknown>;
-  registro: { id: string; numero: number; nombre: string; instagram: string } | null;
+  registro: { id: string; numero: number; nombre: string; instagram: string; dropNumber: number } | null;
 };
 
 export interface AdminRegistroStore {
@@ -43,7 +48,7 @@ export interface AdminRegistroStore {
   regenerateLink(adminId: string, id: string): Promise<{ linkVersion: number } | null>;
   listTemplates(): Promise<MessageTemplate[]>;
   updateTemplate(adminId: string, key: TemplateKey, body: string): Promise<void>;
-  recordExport(adminId: string, count: number): Promise<void>;
+  recordExport(adminId: string, count: number, dropNumber: number | null): Promise<void>;
   listAudit(offset: number, limit: number): Promise<AuditEntry[]>;
   countAudit(): Promise<number>;
 }

@@ -41,7 +41,7 @@ export function BorrarChat({ objetivo }: { objetivo: Objetivo }) {
 
   const pregunta =
     objetivo.tipo === "registro"
-      ? "¿Borrar el historial? Solo en drmr, no en Instagram."
+      ? "Se borra toda la conversación con esta cuenta de Instagram, de todos los archivos. Solo en drmr, no en Instagram."
       : "¿Borrar este chat y el contacto? Solo en drmr, no en Instagram.";
 
   return (

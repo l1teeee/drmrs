@@ -9,6 +9,7 @@ import { Suspense } from "react";
 import { AccionesExpediente } from "@/app/expediente/[slug]/AccionesExpediente";
 import { getExpediente } from "@/application/registration/get-expediente";
 import { Subrayado, TINTA_MAQUINA } from "@/components/Maquina";
+import { formatDropDateStamp, formatDropNumber } from "@/domain/drop/drop";
 import {
   formatRegistrationNumber,
   parseExpedienteSlug,
@@ -33,9 +34,10 @@ export async function generateMetadata({ params }: ExpedientePageProps): Promise
   }
 
   const numero = formatRegistrationNumber(parsed.registrationNumber);
+  const archivo = `Archivo ${formatDropNumber(parsed.dropNumber)}`;
   return {
     title: `Expediente ${numero}`,
-    description: `Registro ${numero} del Archivo 001 de drmr.`,
+    description: `Registro ${numero} del ${archivo} de drmr.`,
     robots: { index: false, follow: false },
   };
 }
@@ -54,6 +56,8 @@ async function ContenidoExpediente({ params }: ExpedientePageProps) {
   }
 
   const numero = formatRegistrationNumber(expediente.registrationNumber);
+  const folio = formatDropNumber(expediente.drop.number);
+  const apertura = formatDropDateStamp(expediente.drop.registeredOpensAt);
   const indiceActual = PIECE_STATUSES.indexOf(expediente.pieceStatus);
 
   return (
@@ -61,7 +65,7 @@ async function ContenidoExpediente({ params }: ExpedientePageProps) {
       <div
         className={`absolute left-[clamp(20px,8vw,120px)] right-[clamp(20px,8vw,120px)] top-[clamp(28px,10vh,96px)] rotate-[-0.4deg] ${TINTA_MAQUINA}`}
       >
-        <p>drmrs archive — exp. 001</p>
+        <p>drmrs archive — exp. {folio}</p>
         <p>registro: {numero}</p>
         <p>nombre: {expediente.firstName.toLowerCase()}</p>
         <p>talla: {SIZE_LABELS[expediente.size].toLowerCase()}</p>
@@ -83,9 +87,14 @@ async function ContenidoExpediente({ params }: ExpedientePageProps) {
             );
           })}
         </p>
-        <p>apertura: 04.12.26, 19:00 h</p>
+        <p>apertura: {apertura}</p>
 
-        <AccionesExpediente slug={slug} registrationNumber={numero} />
+        <AccionesExpediente
+          slug={slug}
+          registrationNumber={numero}
+          folio={folio}
+          archivo={expediente.drop.name}
+        />
 
         {expediente.photoIds.length > 0 && (
           <>

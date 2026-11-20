@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import {
   getConversation,
-  listUnlinkedContacts,
+  listLinkableContacts,
   renderActivationTexts,
   renderTemplateTexts,
 } from "@/application/messaging/admin-messages";
@@ -13,14 +13,15 @@ import { TransicionPagina } from "@/components/TransicionPagina";
 import { TINTA_MAQUINA } from "@/components/Maquina";
 import { listPiecePhotoIds } from "@/application/registration/piece-photos";
 import { TEMPLATE_KEYS, TEMPLATE_LABELS, type TemplateKey } from "@/domain/messaging/message-template";
-import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
+import { formatRegistrationTag } from "@/domain/drop/drop";
+import { formatWhatsappDisplay, whatsappChatUrl } from "@/domain/registration/phone";
 import { photosEnabledFor } from "@/domain/registration/piece-photo";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 import { postgresPiecePhotoRepository } from "@/infrastructure/db/repositories/postgres-piece-photo-repository";
 import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
 
-import { ETIQUETA, FILA, REGLA } from "../../../ui";
+import { ENLACE, ETIQUETA, FILA, REGLA } from "../../../ui";
 import { ActivarPorInstagram } from "../../ActivarPorInstagram";
 import { BorrarChat } from "../../BorrarChat";
 import { estadoInstagram } from "../../estado-instagram";
@@ -59,7 +60,7 @@ export default async function ConversacionPage({
   const fotoIds = await listPiecePhotoIds(registration.id, {
     photos: postgresPiecePhotoRepository,
   });
-  const unlinked = registration.linkedBy === null ? await listUnlinkedContacts(deps) : [];
+  const unlinked = registration.linkedBy === null ? await listLinkableContacts(registration.id, deps) : [];
   const handle = registration.instagramHandle.replace(/^@/, "");
   const estado = estadoInstagram(registration.lastInboundAt, new Date());
   let activationText: string | null = null;
@@ -69,11 +70,12 @@ export default async function ConversacionPage({
     activationText = renderedText;
   }
   const yaTieneBienvenida = messages.some(
-    (message) => message.templateKey === "BIENVENIDA" && message.status !== "FAILED",
+    (message) => message.registrationId === registration.id && message.templateKey === "BIENVENIDA" && message.status !== "FAILED",
   );
   const enCola = messages.filter(
     (message) =>
       message.direction === "OUT" &&
+      message.registrationId === registration.id &&
       (message.status === "WAITING_CONTACT" || message.status === "WAITING_WINDOW"),
   ).length;
   const clavesPlantilla: TemplateKey[] = yaTieneBienvenida
@@ -109,9 +111,11 @@ export default async function ConversacionPage({
               <div
                 className={`relative break-words p-4 font-mono text-[12px] leading-[1.6] text-tinta rotate-[-0.4deg] md:p-5 md:text-[12px] ${TINTA_MAQUINA}`}
               >
-                <p>expediente {formatRegistrationNumber(registration.registrationNumber)}</p>
+                <p>expediente {formatRegistrationTag(registration.dropNumber, registration.registrationNumber)}</p>
+                <p>archivo: {registration.dropName.toLowerCase()}</p>
                 <p>nombre: {registration.fullName.toLowerCase()}</p>
                 <p>instagram: @{handle}</p>
+                <p>whatsapp: {formatWhatsappDisplay(piece.whatsappDigits)}</p>
                 <p>talla: {SIZE_LABELS[piece.size].toLowerCase()}</p>
                 <p>pieza: {PIECE_STATUS_LABELS[piece.pieceStatus]}</p>
                 <p>vínculo: {linkLabel(registration.linkedBy, registration.linkCode)}</p>
@@ -140,6 +144,7 @@ export default async function ConversacionPage({
                 </h1>
                 <p className={`${ETIQUETA} [overflow-wrap:anywhere]`}>
                   {registration.fullName} · {estado.etiqueta}
+                  {" · "}<a href={whatsappChatUrl(piece.whatsappDigits)} target="_blank" rel="noopener noreferrer" className={`${ENLACE} text-[13px]`}>WhatsApp</a>
                 </p>
               </div>
               {messages.length > 0 && <BorrarChat objetivo={{ tipo: "registro", id: registration.id }} />}
@@ -162,7 +167,7 @@ export default async function ConversacionPage({
             >
               <ul className="grid">
                 {messages.map((message) => (
-                  <MensajeChat key={message.id} message={message} />
+                  <MensajeChat key={message.id} message={message} currentDropNumber={registration.dropNumber} />
                 ))}
               </ul>
             </HiloMensajes>
@@ -205,6 +210,7 @@ export default async function ConversacionPage({
                   username: contact.username,
                   displayName: contact.displayName,
                   lastInboundAt: contact.lastInboundAt.toISOString(),
+                  linkedTags: contact.linkedTags,
                 }))}
               />
             )}

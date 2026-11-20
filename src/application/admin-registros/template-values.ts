@@ -1,7 +1,5 @@
-import {
-  DROP_DATE_LABEL,
-  type TEMPLATE_VARIABLES,
-} from "@/domain/messaging/message-template";
+import { formatDropDateLabel } from "@/domain/drop/drop";
+import type { TEMPLATE_VARIABLES } from "@/domain/messaging/message-template";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { firstName } from "@/domain/registration/registration";
@@ -20,6 +18,7 @@ export function buildTemplateValues(
     talla: SIZE_LABELS[row.size],
     estado: PIECE_STATUS_LABELS[row.pieceStatus],
     link: expedienteUrl,
-    fecha_drop: DROP_DATE_LABEL,
+    fecha_drop: formatDropDateLabel(row.dropRegisteredOpensAt),
+    archivo: row.dropName,
   };
 }

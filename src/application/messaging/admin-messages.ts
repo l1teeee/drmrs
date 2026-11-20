@@ -17,6 +17,8 @@ export type EnqueueMessageResult =
 
 export interface ConversationMessage {
   id: string;
+  registrationId: string | null;
+  dropNumber: number | null;
   direction: "IN" | "OUT";
   source: "ADMIN" | "INSTAGRAM_APP" | "CONTACT";
   status: MessageStatus;
@@ -33,6 +35,8 @@ export interface Conversation {
   registration: {
     id: string;
     registrationNumber: number;
+    dropNumber: number;
+    dropName: string;
     fullName: string;
     instagramHandle: string;
     linkedBy: string | null;
@@ -48,6 +52,8 @@ export interface UnsentMessage {
   id: string;
   registrationId: string;
   registrationNumber: number;
+  dropNumber: number;
+  dropName: string;
   fullName: string;
   instagramHandle: string;
   status: QueuedMessageStatus | "FAILED";
@@ -73,10 +79,16 @@ export interface UnlinkedContact {
   lastInboundText: string | null;
 }
 
+export interface LinkableContact extends UnlinkedContact {
+  linkedTags: string[];
+}
+
 export interface ConversationSummary {
   registrationId: string | null;
   contactId: string | null;
   registrationNumber: number | null;
+  dropNumber: number | null;
+  dropName: string | null;
   fullName: string | null;
   instagramHandle: string | null;
   contactUsername: string | null;
@@ -106,6 +118,7 @@ export interface AdminMessageStore {
   getConversation(registrationId: string): Promise<Conversation | null>;
   listUnsentMessages(): Promise<UnsentMessage[]>;
   listUnlinkedContacts(): Promise<UnlinkedContact[]>;
+  listLinkableContacts(registrationId: string): Promise<LinkableContact[]>;
   listConversations(): Promise<ConversationSummary[]>;
 }
 
@@ -133,6 +146,7 @@ export async function queueInstagramMessage(
     const template = templates.find((entry) => entry.key === input.templateKey);
     if (!template) throw new Error("Message template not found");
     const expedienteUrl = deps.registros.baseUrl + expedientePath(
+      registration.dropNumber,
       registration.registrationNumber,
       deps.registros.codes.codeFor(registration.id, registration.linkVersion),
     );
@@ -251,6 +265,10 @@ export function listUnsentMessages(deps: AdminMessagesDependencies) {
 
 export function listUnlinkedContacts(deps: AdminMessagesDependencies) {
   return deps.store.listUnlinkedContacts();
+}
+
+export function listLinkableContacts(registrationId: string, deps: AdminMessagesDependencies) {
+  return deps.store.listLinkableContacts(registrationId);
 }
 
 export function listConversations(deps: AdminMessagesDependencies) {

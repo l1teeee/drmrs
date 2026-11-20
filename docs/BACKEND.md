@@ -4,6 +4,61 @@ Aplicación Next.js 16 con base de datos PostgreSQL para el registro correlativo
 Panel privado de administración para consultar registros, gestionar piezas e importar datos.
 Mensajería de confirmación con clientes mediante la API de Meta en Instagram.
 
+## Drops y registros por archivo
+
+La tabla `drops` concentra el número inmutable, nombre, aperturas para registrados y público,
+cantidad de piezas y estado de cada archivo. Los estados son `PREPARACION`, `REGISTRO` y
+`CERRADO`; solo un drop puede estar en `REGISTRO`. El archivo público actual es el abierto
+o, si no hay ninguno abierto, el cerrado con mayor número. Los drops en preparación no son públicos.
+Crear, editar y cambiar el estado de un drop deja auditorías `DROP_CREATED`, `DROP_UPDATED`
+y `DROP_STATUS_CHANGED`. Abrir uno cierra el anterior; una edición de estado obsoleta no escribe nada.
+Las futuras acciones del panel deben llamar a `updateTag("drops")` después de una mutación exitosa.
+Los lectores públicos de drop y contador comparten esa etiqueta y caché de minutos; sus
+llamadores deben ejecutar `await connection()` antes de leerlos.
+
+Cada fila de `registrations` pertenece a un drop mediante `drop_id`. La migración `0008_drops.sql`
+crea el drop 1, `Archivo 001`, y le asigna todos los registros existentes sin cambiar sus números.
+La numeración va de 1 a 9999 en cada drop, con un bloqueo transaccional independiente
+`drmr_registration_number:<dropId>`. Número, Instagram, hash de WhatsApp y contacto de Instagram
+son únicos dentro del drop; la misma persona puede registrarse en varios archivos.
+La cantidad de piezas es informativa: no limita el registro gratuito.
+
+El formulario escribe solo en el drop con estado `REGISTRO`, comprobado nuevamente con
+`FOR SHARE` dentro de la transacción. Sin un drop abierto devuelve HTTP 409 con
+`{ok:false,error:"cerrado"}` antes de consumir Turnstile. Las respuestas exitosas incluyen
+`archivo` y `archivoNumero`; se conserva la protección que oculta el número y expediente
+cuando WhatsApp coincide pero Instagram no. La herencia de contacto entre drops requiere
+coincidencia de ambos datos y usa un savepoint: un conflicto de contacto deja el nuevo registro sin vincular.
+
+Los enlaces nuevos usan `/expediente/DDD-NNNN-code`, donde `DDD` identifica el drop y `NNNN`
+el registro dentro de él. Los enlaces anteriores `/expediente/NNNN-code` siguen resolviendo
+al drop 1; `000` no es un número de drop válido. La entrada del HMAC no cambia y los enlaces
+siguen siendo revocables mediante `link_version`.
+
+La previsualización y ejecución de importaciones requieren `?drop=<uuid>` y permiten cualquier
+estado del drop. Dedupe y numeración se resuelven solo dentro del archivo elegido. La exportación
+acepta el mismo parámetro de forma opcional; sin él exporta todos los archivos. Un UUID inválido
+o inexistente devuelve 400. El CSV añade `archivo` y `archivo_numero` al principio y se descarga
+como `drmr-registros-<DDD|todos>-YYYYMMDD.csv`; la auditoría incluye el número de drop o `null`.
+Las plantillas aceptan `{archivo}` y calculan `{fecha_drop}` con la apertura para registrados
+del drop del registro, en la zona `America/Mexico_City` (UTC-6).
+
+### Rollout y rollback de la migración 0008
+
+Ejecutar `npm run db:migrate` contra Railway justo antes de que el nuevo despliegue quede activo.
+El registro falla en el intervalo entre la migración y la nueva aplicación, porque la versión
+anterior no escribe `drop_id`. El migrador ejecuta todo `0008_drops.sql` en una sola transacción.
+Estos pasos son operativos; no se ejecutan al modificar el código.
+
+El rollback solo es posible mientras ningún drop distinto del 1 tenga registros. En una
+transacción, restaurar las restricciones globales `registrations_number_uq`,
+`registrations_instagram_uq` y `registrations_whatsapp_hash_uq`, y el índice único parcial
+`registrations_messaging_contact_uq` sobre `messaging_contact_id` no nulo. Quitar las nuevas
+restricciones `registrations_drop_number_uq`, `registrations_drop_instagram_uq`,
+`registrations_drop_whatsapp_hash_uq` y el índice `registrations_drop_contact_uq`, y ejecutar
+`ALTER TABLE registrations ALTER COLUMN drop_id DROP NOT NULL` antes de volver a la versión
+anterior. Si ya hay registros de otro drop, restaurar un respaldo de la base de datos.
+
 ## Correr en local
 
 Comandos para iniciar el entorno local de desarrollo:
@@ -121,13 +176,13 @@ Nombres de columnas aceptados por el analizador:
 
 Reglas del proceso:
 - Los números de registro presentes en la hoja se conservan intactos.
-- La ejecución repetida del proceso es idempotente: no se crean registros duplicados si el número, WhatsApp o Instagram ya existen.
+- La ejecución repetida del proceso es idempotente dentro del drop elegido: no se crean registros duplicados si el número, WhatsApp o Instagram ya existen en ese archivo.
 - La importación debe completarse antes de habilitar el formulario público para asegurar la secuencia correlativa de los registros nuevos.
 
 ## Instagram
 
 La integración con Instagram utiliza la API de Meta y requiere interacción previa del usuario:
-- Plantillas de mensaje: las plantillas de mensaje (Plantillas de Instagram, variables {nombre} {numero} {talla} {estado} {link} {fecha_drop}) se envían desde la página de conversación de cada registro.
+- Plantillas de mensaje: las plantillas de mensaje (Plantillas de Instagram, variables {nombre} {numero} {talla} {estado} {link} {fecha_drop} {archivo}) se envían desde la página de conversación de cada registro.
 - Ventana de 24 horas: las políticas de Meta prohíben iniciar conversaciones comerciales en frío. El cliente debe enviar el primer mensaje a la cuenta.
 - Mecanismo de vinculación: al registrarse, la pantalla de confirmación entrega un enlace directo `https://ig.me/m/drmrs.archive?ref=<codigo>` con un código único de 6 caracteres. Cuando el cliente abre la conversación o envía el código, el webhook de Meta captura el evento y vincula el identificador de usuario (`instagram_scoped_id`) al registro. De forma complementaria, el sistema vincula automáticamente por nombre de usuario de Instagram si la coincidencia es única.
 - Bienvenida automática: al registrarse una persona nueva por el formulario web, el sistema encola el mensaje de bienvenida de Instagram. Se envía solo después de que la persona escribe a la cuenta (enlace "Abrir Instagram" de la confirmación), cuando el webhook la vincula por código o por usuario. No se envía a un contacto existente solo porque el usuario de Instagram coincida con el escrito en el formulario. Los registros importados no reciben este mensaje automáticamente.
@@ -149,10 +204,10 @@ Capas de seguridad implementadas en el sistema:
 - Validación de origen y tamaño en formulario público: validación estricta de cabecera `Origin` (`isSameOriginRequest`) y límite de 16 KB en el cuerpo de la petición en `POST /api/registro`.
 - Verificación de bot con Cloudflare Turnstile: validación del token en el servidor mediante la API de Cloudflare, restringida a la acción `registro` y a nombres de host autorizados, rechazando claves de prueba en producción.
 - Limitación de tasa (rate limiting) distribuida: contadores en la tabla `rate_limit_counters` con ventanas de tiempo fijas y claves hasheadas con HMAC para IPs públicas, números de WhatsApp, expedientes y accesos al panel.
-- Numeración correlativa sin huecos bajo bloqueo transaccional: asignación protegida mediante `pg_advisory_xact_lock` con cálculo `COALESCE(MAX(registration_number), 0) + 1` en una única transacción serializada.
+- Numeración correlativa por drop bajo bloqueo transaccional: asignación protegida mediante `pg_advisory_xact_lock` con cálculo `COALESCE(MAX(registration_number), 0) + 1` filtrado por `drop_id` en una única transacción serializada. El orden de bloqueos es drop, bloqueo de numeración, registros y contacto. Las transacciones de drops y registro usan timeouts locales de bloqueo de 3 s y sentencia de 5 s; la importación conserva 5 s y 15 s.
 - Cifrado en reposo para datos de contacto: números de WhatsApp y correos electrónicos se cifran con AES-256-GCM utilizando `PII_ENCRYPTION_KEY`, vectores de inicialización independientes y datos autenticados asociados (AAD).
 - Índice ciego para detección de duplicados: cálculo de HMAC con clave secreta sobre el teléfono de WhatsApp para validar unicidad sin exponer los datos en texto plano.
-- Enlaces de expediente no adivinables y revocables: rutas `/expediente/<numero>-<code>` generadas con HMAC-SHA256 truncado a 10 caracteres en base32 sin almacenamiento en base de datos. La revocación se realiza incrementando el campo `link_version`.
+- Enlaces de expediente no adivinables y revocables: rutas `/expediente/<drop>-<numero>-<code>` generadas con HMAC-SHA256 truncado a 10 caracteres en base32 sin almacenamiento en base de datos. Los enlaces sin drop resuelven al archivo 1. La revocación se realiza incrementando el campo `link_version`.
 - Derivación de contraseñas con scrypt: almacenamiento de claves administrativas procesadas con el algoritmo scrypt y parámetros de alto costo computacional.
 - Sesiones en base de datos protegidas por hash: la tabla `admin_sessions` almacena únicamente el hash SHA-256 del token emitido, impidiendo la recuperación de sesiones en caso de lectura no autorizada de la tabla.
 - Bloqueo temporal por ataques de fuerza bruta: suspensión automática de accesos durante 15 minutos tras 5 fallos consecutivos de autenticación.

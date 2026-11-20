@@ -16,11 +16,13 @@ export type DatosRegistro = {
 export type RespuestaRegistro = {
   ok?: boolean;
   numero?: number;
+  archivo?: string;
+  archivoNumero?: number;
   existente?: boolean;
   expediente?: string;
   instagram?: string;
   codigo?: string;
-  error?: string;
+  error?: "cerrado" | "origen" | "datos" | "verificacion" | "limite" | "instagram" | "servidor";
 };
 
 export async function enviarRegistro(

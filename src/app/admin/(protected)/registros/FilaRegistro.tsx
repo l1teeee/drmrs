@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 
-import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { SIZE_LABELS } from "@/domain/registration/piece-status";
 import type { PieceStatus, Size } from "@/domain/registration/registration";
 
@@ -17,7 +16,10 @@ import { PistaPieza } from "./PistaPieza";
 export interface FilaRegistroProps {
   id: string;
   conversacionHref: string;
-  registrationNumber: number;
+  etiqueta: string;
+  todos: boolean;
+  whatsapp: string;
+  whatsappUrl: string;
   fullName: string;
   instagramHandle: string;
   size: Size;
@@ -32,7 +34,10 @@ const ACCION = `${ENLACE} text-[13px]`;
 export function FilaRegistro({
   id,
   conversacionHref,
-  registrationNumber,
+  etiqueta,
+  todos,
+  whatsapp,
+  whatsappUrl,
   fullName,
   instagramHandle,
   size,
@@ -62,7 +67,6 @@ export function FilaRegistro({
   }, [confirmingNewLink]);
 
   const cleanHandle = instagramHandle.replace(/^@/, "");
-  const formattedNumber = formatRegistrationNumber(registrationNumber);
 
   async function handleCopyLink() {
     setActionError(null);
@@ -102,8 +106,8 @@ export function FilaRegistro({
       className={`grid gap-x-6 gap-y-2 border-b ${FILA} py-4 md:grid-cols-[minmax(0,1fr)_auto]`}
     >
       <div className="flex items-start gap-3 md:gap-4">
-        <span className={`${NUMERO} w-12 shrink-0 text-[20px] leading-none md:w-14 md:text-[22px]`}>
-          {formattedNumber}
+        <span className={`${NUMERO} ${todos ? "w-auto break-all" : "w-12 md:w-14"} shrink-0 text-[20px] leading-none md:text-[22px]`}>
+          {etiqueta}
         </span>
         <div className="grid min-w-0 gap-1.5">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -117,6 +121,7 @@ export function FilaRegistro({
               @{cleanHandle}
             </a>
             <span className={ETIQUETA}>talla {SIZE_LABELS[size]}</span>
+            <span className={ETIQUETA}>whatsapp {whatsapp}</span>
             <span className={ETIQUETA}>{estado.etiqueta}</span>
           </div>
           <PistaPieza registrationId={id} current={pieceStatus} activo={estado.activo} />
@@ -125,6 +130,7 @@ export function FilaRegistro({
 
       <div className="grid content-start gap-2 pl-[3.75rem] md:justify-items-end md:pl-0">
         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5 md:justify-end">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className={ACCION}>WhatsApp</a>
           <Link href={conversacionHref} className={ACCION}>
             Conversación
           </Link>

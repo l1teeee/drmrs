@@ -79,7 +79,7 @@ export async function getExpedientePhoto(
   const parsed = parseExpedienteSlug(slug);
   if (!parsed) return null;
 
-  const record = await deps.store.findByNumber(parsed.registrationNumber);
+  const record = await deps.store.findByDropAndNumber(parsed.dropNumber, parsed.registrationNumber);
   if (!record || !deps.codes.matches(record.id, record.linkVersion, parsed.code)) {
     return null;
   }

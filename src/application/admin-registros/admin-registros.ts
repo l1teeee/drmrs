@@ -1,4 +1,6 @@
 import type { RateLimitCheck } from "@/application/ports/rate-limit";
+import type { DropStore } from "@/application/drops/drop-store";
+import { formatDropNumber } from "@/domain/drop/drop";
 import type { ExpedienteCodes } from "@/application/registration/registration-store";
 import type {
   ChangeStatusInput,
@@ -13,6 +15,7 @@ import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-st
 import type { AdminRegistroRow, AdminRegistroStore, AuditEntry } from "./admin-registro-store";
 
 export interface AdminRegistrosDependencies {
+  drops: Pick<DropStore, "findDropById">;
   store: AdminRegistroStore;
   codes: ExpedienteCodes;
   baseUrl: string;
@@ -22,10 +25,11 @@ export interface AdminRegistrosDependencies {
 export type AdminRegistroView = AdminRegistroRow & { expedienteUrl: string };
 
 export function expedienteUrl(
-  registration: Pick<AdminRegistroRow, "id" | "registrationNumber" | "linkVersion">,
+  registration: Pick<AdminRegistroRow, "id" | "dropNumber" | "registrationNumber" | "linkVersion">,
   deps: AdminRegistrosDependencies,
 ): string {
   return deps.baseUrl + expedientePath(
+    registration.dropNumber,
     registration.registrationNumber,
     deps.codes.codeFor(registration.id, registration.linkVersion),
   );
@@ -111,15 +115,21 @@ export async function updateTemplate(
 
 export async function exportRegistros(
   adminId: string,
+  dropId: string | null,
   deps: AdminRegistrosDependencies,
 ): Promise<string[][]> {
-  const registrations = await listRegistros({}, deps);
+  const drop = dropId === null ? null : await deps.drops.findDropById(dropId);
+  if (dropId !== null && drop === null) throw new Error("Drop not found");
+  const registrations = await listRegistros({ dropId: dropId ?? undefined }, deps);
   const rows = [[
+    "archivo", "archivo_numero",
     "numero", "nombre", "whatsapp", "correo", "instagram", "talla", "estado", "origen",
     "fuente", "fecha_registro", "expediente",
   ]];
   for (const registration of registrations) {
     rows.push([
+      registration.dropName,
+      formatDropNumber(registration.dropNumber),
       formatRegistrationNumber(registration.registrationNumber),
       registration.fullName,
       registration.whatsappDigits,
@@ -133,7 +143,7 @@ export async function exportRegistros(
       registration.expedienteUrl,
     ]);
   }
-  await deps.store.recordExport(adminId, registrations.length);
+  await deps.store.recordExport(adminId, registrations.length, drop?.number ?? null);
   return rows;
 }
 

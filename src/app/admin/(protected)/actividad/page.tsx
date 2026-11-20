@@ -4,6 +4,7 @@ import { connection } from "next/server";
 import type { AuditEntry } from "@/application/admin-registros/admin-registro-store";
 import { listAuditPage } from "@/application/admin-registros/admin-registros";
 import { TransicionPagina } from "@/components/TransicionPagina";
+import { DROP_STATUS_LABELS, formatDropNumber, formatRegistrationTag, type DropStatus } from "@/domain/drop/drop";
 import {
   TEMPLATE_KEYS,
   TEMPLATE_LABELS,
@@ -31,6 +32,8 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
 });
 
 const STATIC_ACTION_LABELS: Record<string, string> = {
+  DROP_CREATED: "Drop creado",
+  DROP_UPDATED: "Drop editado",
   EXPEDIENTE_LINK_REGENERATED: "Nuevo link de expediente",
   INSTAGRAM_ACTIVATION_SENT: "Activación enviada por Instagram",
   MESSAGE_TEMPLATE_UPDATED: "Plantilla editada",
@@ -62,6 +65,10 @@ function statusLabel(raw: unknown): string {
 }
 
 function formatAuditAction(entry: AuditEntry): string {
+  if (entry.action === "DROP_STATUS_CHANGED") {
+    const label = (value: unknown) => typeof value === "string" && value in DROP_STATUS_LABELS ? DROP_STATUS_LABELS[value as DropStatus] : String(value);
+    return `Drop: ${label(entry.metadata.from)} → ${label(entry.metadata.to)}`;
+  }
   if (entry.action === "REGISTRATION_CREATED") {
     return entry.metadata.origin === "IMPORT"
       ? "Nuevo registro (importado)"
@@ -93,8 +100,8 @@ function isTemplateKey(value: unknown): value is TemplateKey {
 
 function registroTexto(entry: AuditEntry): string | null {
   if (entry.registro !== null) {
-    const { numero, nombre, instagram } = entry.registro;
-    return `#${formatRegistrationNumber(numero)} ${nombre} (@${instagram})`;
+    const { numero, nombre, instagram, dropNumber } = entry.registro;
+    return `#${dropNumber != null ? formatRegistrationTag(dropNumber, numero) : formatRegistrationNumber(numero)} ${nombre} (@${instagram})`;
   }
   const number = entry.metadata.number;
   if (typeof number === "number") {
@@ -106,6 +113,10 @@ function registroTexto(entry: AuditEntry): string | null {
 function detalleParts(entry: AuditEntry): Array<string | null> {
   const { metadata } = entry;
   switch (entry.action) {
+    case "DROP_CREATED":
+    case "DROP_UPDATED":
+    case "DROP_STATUS_CHANGED":
+      return [typeof metadata.number === "number" ? `Archivo ${formatDropNumber(metadata.number)}` : null];
     case "REGISTRATION_CREATED":
       return [registroTexto(entry), metadata.origin === "IMPORT" ? "importado" : "desde la web"];
     case "PIECE_STATUS_CHANGED":

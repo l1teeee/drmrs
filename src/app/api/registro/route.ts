@@ -57,6 +57,8 @@ export async function POST(request: Request) {
       case "registered":
         return jsonResponse(200, {
           ok: true,
+          archivo: result.archivo,
+          archivoNumero: result.archivoNumero,
           numero: result.registrationNumber,
           existente: false,
           expediente: result.expedientePath,
@@ -67,18 +69,24 @@ export async function POST(request: Request) {
         if (result.registrationNumber === null) {
           return jsonResponse(200, {
             ok: true,
+            archivo: result.archivo,
+            archivoNumero: result.archivoNumero,
             existente: true,
             ...(result.instagramLink !== null ? { instagram: result.instagramLink } : {}),
           });
         }
         return jsonResponse(200, {
           ok: true,
+          archivo: result.archivo,
+          archivoNumero: result.archivoNumero,
           numero: result.registrationNumber,
           existente: true,
           ...(result.expedientePath !== null ? { expediente: result.expedientePath } : {}),
           ...(result.instagramLink !== null ? { instagram: result.instagramLink } : {}),
           ...(result.linkCode !== null ? { codigo: result.linkCode } : {}),
         });
+      case "closed":
+        return jsonResponse(409, { ok: false, error: "cerrado" });
       case "invalid":
         return jsonResponse(400, { ok: false, error: "datos" });
       case "bot_rejected":

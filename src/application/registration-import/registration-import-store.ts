@@ -10,6 +10,6 @@ export type RowClassification = {
 export type ImportSummary = { created: number; existing: number; conflicts: number };
 
 export interface RegistrationImportStore {
-  classify(rows: ParsedImportRow[]): Promise<RowClassification[]>;
-  insertNew(adminId: string, rows: ParsedImportRow[]): Promise<ImportSummary>;
+  classify(rows: ParsedImportRow[], dropId: string): Promise<RowClassification[]>;
+  insertNew(adminId: string, rows: ParsedImportRow[], dropId: string): Promise<ImportSummary | { kind: "not_found" }>;
 }

@@ -10,7 +10,6 @@ import {
 } from "react";
 
 import {
-  DROP_DATE_LABEL,
   renderMessageTemplate,
   TEMPLATE_VARIABLES,
   type TemplateKey,
@@ -24,6 +23,8 @@ export interface EditorPlantillaProps {
   title: string;
   initialBody: string;
   updatedAtLabel: string;
+  archivo: string;
+  fechaDrop: string;
 }
 
 interface Feedback {
@@ -38,7 +39,6 @@ const SAMPLE_VALUES: Record<string, string> = {
   talla: "M",
   estado: "apartado",
   link: "drmr.com.mx/expediente/0023-…",
-  fecha_drop: DROP_DATE_LABEL,
 };
 
 export function EditorPlantilla({
@@ -46,7 +46,10 @@ export function EditorPlantilla({
   title,
   initialBody,
   updatedAtLabel,
+  archivo,
+  fechaDrop,
 }: EditorPlantillaProps) {
+  const sampleValues = { ...SAMPLE_VALUES, archivo, fecha_drop: fechaDrop };
   const router = useRouter();
   const [body, setBody] = useState(initialBody);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -135,7 +138,7 @@ export function EditorPlantilla({
       {!abierta ? (
         <>
           <p className="line-clamp-3 whitespace-pre-wrap break-words text-[14px] text-tinta/70">
-            {renderMessageTemplate(body, SAMPLE_VALUES)}
+            {renderMessageTemplate(body, sampleValues)}
           </p>
           {feedback !== null && !feedback.failed ? (
             <span aria-live="polite" className={ETIQUETA}>
@@ -187,7 +190,7 @@ export function EditorPlantilla({
       <div className="grid gap-1">
         <span className={ETIQUETA}>vista previa</span>
         <p className="whitespace-pre-wrap break-words text-[14px] text-tinta/80">
-          {renderMessageTemplate(body, SAMPLE_VALUES)}
+          {renderMessageTemplate(body, sampleValues)}
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">

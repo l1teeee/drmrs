@@ -25,6 +25,7 @@ async function renderWelcomeText(registrationId: string): Promise<string | null>
   const template = templates.find((entry) => entry.key === "BIENVENIDA");
   if (!template) throw new Error("Message template not found");
   const expedienteUrl = baseUrl + expedientePath(
+    registration.dropNumber,
     registration.registrationNumber,
     codes.codeFor(registration.id, registration.linkVersion),
   );

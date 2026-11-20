@@ -4,7 +4,7 @@ import { connection } from "next/server";
 import { listConversations } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { paginate } from "@/domain/pagination";
-import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
+import { formatRegistrationTag } from "@/domain/drop/drop";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-messages-runtime";
@@ -56,7 +56,7 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
                   <span className={`${NUMERO} text-[20px] leading-none`}>
                     {conversacion.registrationNumber === null
                       ? "—"
-                      : formatRegistrationNumber(conversacion.registrationNumber)}
+                      : formatRegistrationTag(conversacion.dropNumber!, conversacion.registrationNumber)}
                   </span>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
@@ -96,7 +96,7 @@ export default async function TodosLosChatsPage({ searchParams }: { searchParams
                         <>
                           {conversacion.contactUsername && (
                             <Link
-                              href={adminHref(`/registros?q=${encodeURIComponent(conversacion.contactUsername)}`)}
+                              href={adminHref(`/registros?q=${encodeURIComponent(conversacion.contactUsername)}&drop=todos`)}
                               className={`${ENLACE} text-[13px]`}
                             >
                               Buscar registro

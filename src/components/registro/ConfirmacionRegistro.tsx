@@ -17,6 +17,9 @@ const CUADRO = 0.06;
 
 type ConfirmacionRegistroProps = {
   numero: number;
+  archivo: string;
+  archivoNumero: number;
+  aperturaCorta: string;
   yaEstaba: boolean;
   telefono: string;
   instagram: string;
@@ -26,14 +29,19 @@ type ConfirmacionRegistroProps = {
   onCorregir: () => void;
 };
 
-function mensajeInstagram(numero: number, codigo: string | null): string {
-  if (numero > 0 && codigo) return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)}. Código: ${codigo}`;
-  if (numero > 0) return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)}.`;
+function mensajeInstagram(numero: number, archivo: string, codigo: string | null): string {
+  if (numero > 0 && codigo)
+    return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)} del ${archivo}. Código: ${codigo}`;
+  if (numero > 0)
+    return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)} del ${archivo}.`;
   return "Hola drmr, ya estoy en el archivo.";
 }
 
 export function ConfirmacionRegistro({
   numero,
+  archivo,
+  archivoNumero,
+  aperturaCorta,
   yaEstaba,
   telefono,
   instagram,
@@ -54,7 +62,7 @@ export function ConfirmacionRegistro({
 
   async function copiarMensaje() {
     try {
-      await navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
+      await navigator.clipboard.writeText(mensajeInstagram(numero, archivo, codigo));
       setCopiado(true);
     } catch {
       setCopiado(false);
@@ -170,7 +178,7 @@ export function ConfirmacionRegistro({
         </div>
 
         <p data-aparece className="mt-8 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
-          registro no.
+          {archivo} · registro no.
         </p>
         {numero ? (
           <p
@@ -232,9 +240,9 @@ export function ConfirmacionRegistro({
           </div>
         )}
 
-        {numero >= 1 && numero <= 10 && (
+        {archivoNumero === 1 && numero >= 1 && numero <= 10 && (
           <p data-aparece className="mt-3 text-[15px] leading-[1.55] text-white/85">
-            <b>Top 10.</b> Tu pieza lleva tu número y queda apartada 24 h el 04.12.
+            <b>Top 10.</b> Tu pieza lleva tu número y queda apartada 24 h el {aperturaCorta}.
           </p>
         )}
 
@@ -253,7 +261,7 @@ export function ConfirmacionRegistro({
             </button>
           )}
           <a
-            href={enlaceWhatsappRegistro(numero)}
+            href={enlaceWhatsappRegistro(numero, archivo)}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-4 hover:text-white/80"

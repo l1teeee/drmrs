@@ -67,6 +67,7 @@ export default async function SinEnviarPage({ searchParams }: { searchParams: Se
                     estado={estado}
                     activacion={activacion}
                     registrationNumber={message.registrationNumber}
+                  dropNumber={message.dropNumber}
                     fullName={message.fullName}
                     instagramHandle={message.instagramHandle}
                     status={message.status}

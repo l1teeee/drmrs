@@ -4,10 +4,12 @@ import { join } from "node:path";
 type ExpedienteImagenProps = {
   ancho: number;
   alto: number;
+  folio: string;
   registro: string;
   nombre: string;
   talla: string;
   estado: string;
+  apertura: string;
 };
 
 export async function cargarFuenteMaquina(): Promise<ArrayBuffer> {
@@ -18,10 +20,12 @@ export async function cargarFuenteMaquina(): Promise<ArrayBuffer> {
 export function ExpedienteImagen({
   ancho,
   alto,
+  folio,
   registro,
   nombre,
   talla,
   estado,
+  apertura,
 }: ExpedienteImagenProps) {
   const margen = Math.round(ancho * 0.08);
   const tamanoRegistro = Math.round(alto * 0.12);
@@ -49,7 +53,7 @@ export function ExpedienteImagen({
           flexDirection: "column",
         }}
       >
-        <div style={{ display: "flex" }}>drmrs archive — exp. 001</div>
+        <div style={{ display: "flex" }}>{`drmrs archive — exp. ${folio}`}</div>
         <div
           style={{
             display: "flex",
@@ -64,7 +68,7 @@ export function ExpedienteImagen({
         <div style={{ display: "flex" }}>{`nombre: ${nombre}`}</div>
         <div style={{ display: "flex" }}>{`talla: ${talla}`}</div>
         <div style={{ display: "flex" }}>{`pieza: ${estado}`}</div>
-        <div style={{ display: "flex" }}>apertura: 04.12.26, 19:00 h</div>
+        <div style={{ display: "flex" }}>{`apertura: ${apertura}`}</div>
       </div>
 
       <div

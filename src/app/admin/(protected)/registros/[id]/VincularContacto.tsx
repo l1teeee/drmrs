@@ -11,6 +11,7 @@ export interface ContactoVinculable {
   username: string | null;
   displayName: string | null;
   lastInboundAt: string;
+  linkedTags: string[];
 }
 
 const SELECT = `${CAMPO} max-w-md disabled:cursor-not-allowed disabled:opacity-40`;
@@ -24,7 +25,7 @@ const dateFormatter = new Intl.DateTimeFormat("es-MX", {
 });
 
 function errorMessage(error: string): string {
-  if (error === "conflict") return "Ese contacto ya está vinculado.";
+  if (error === "conflict") return "Ese contacto ya tiene un registro en este drop.";
   if (error === "invalid_state") return "Este registro ya está vinculado.";
   return "No se pudo vincular.";
 }
@@ -73,6 +74,7 @@ export function VincularContacto({
             {contact.username ? `@${contact.username}` : (contact.displayName ?? "sin usuario")}
             {" · "}
             {dateFormatter.format(new Date(contact.lastInboundAt))}
+            {contact.linkedTags.length > 0 && ` · ya en ${contact.linkedTags.join(", ")}`}
           </option>
         ))}
       </select>

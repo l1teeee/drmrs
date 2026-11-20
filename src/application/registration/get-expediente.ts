@@ -3,9 +3,10 @@ import { parseExpedienteSlug } from "@/domain/registration/expediente-link";
 import { firstName, type PieceStatus, type Size } from "@/domain/registration/registration";
 
 import type { PiecePhotoStore } from "./piece-photos";
-import type { ExpedienteCodes, RegistrationStore } from "./registration-store";
+import type { ExpedienteCodes, ExpedienteRecord, RegistrationStore } from "./registration-store";
 
 export type ExpedienteView = {
+  drop: ExpedienteRecord["drop"];
   registrationNumber: number;
   firstName: string;
   size: Size;
@@ -35,12 +36,13 @@ export async function getExpediente(
     return null;
   }
 
-  const record = await deps.store.findByNumber(parsed.registrationNumber);
+  const record = await deps.store.findByDropAndNumber(parsed.dropNumber, parsed.registrationNumber);
   if (!record || !deps.codes.matches(record.id, record.linkVersion, parsed.code)) {
     return null;
   }
 
   return {
+    drop: record.drop,
     registrationNumber: record.registrationNumber,
     firstName: firstName(record.fullName),
     size: record.size,

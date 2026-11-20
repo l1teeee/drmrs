@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { type ReactNode, Suspense } from "react";
+import { FolioArchivo } from "@/components/FolioArchivo";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import styles from "@/components/legal/legal.module.css";
 import { INSTAGRAM_URL, TIKTOK_URL } from "@/lib/archivo";
@@ -12,6 +13,7 @@ type PaginaLegalProps = {
 };
 
 const ENLACE = "hover:text-tinta";
+const CLASE_FOLIO = "font-mono text-[13px] text-tinta/60";
 
 export function PaginaLegal({ titulo, actualizacion, children }: PaginaLegalProps) {
   return (
@@ -24,7 +26,9 @@ export function PaginaLegal({ titulo, actualizacion, children }: PaginaLegalProp
         <Link href="/" className="font-mono text-[13px] text-tinta/60 hover:text-tinta">
           ← volver
         </Link>
-        <span className="font-mono text-[13px] text-tinta/60">Exp. 001</span>
+        <Suspense fallback={<span className={CLASE_FOLIO}>Exp.</span>}>
+          <FolioArchivo className={CLASE_FOLIO} />
+        </Suspense>
       </header>
 
       <main className="mx-auto w-full max-w-[680px] flex-1 py-[clamp(40px,8vh,96px)]">

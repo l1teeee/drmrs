@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
+import { formatRegistrationTag } from "@/domain/drop/drop";
 
 import { ENLACE, ETIQUETA, FILA, NUMERO } from "../../ui";
 import { ActivarPorInstagram } from "../ActivarPorInstagram";
@@ -16,6 +16,7 @@ export interface FilaSinEnviarProps {
   id: string;
   registrationId: string;
   registrationNumber: number;
+  dropNumber: number;
   fullName: string;
   instagramHandle: string;
   status: "QUEUED" | "WAITING_CONTACT" | "WAITING_WINDOW" | "FAILED";
@@ -54,6 +55,7 @@ export function FilaSinEnviar({
   id,
   registrationId,
   registrationNumber,
+  dropNumber,
   fullName,
   instagramHandle,
   status,
@@ -87,7 +89,7 @@ export function FilaSinEnviar({
   return (
     <li className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 border-b ${FILA} py-3.5 sm:gap-x-4`}>
       <span className={`${NUMERO} text-[20px] leading-none`}>
-        {formatRegistrationNumber(registrationNumber)}
+        {formatRegistrationTag(dropNumber, registrationNumber)}
       </span>
       <div className="flex min-w-0 flex-col">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">

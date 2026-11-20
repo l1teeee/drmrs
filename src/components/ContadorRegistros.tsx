@@ -4,11 +4,15 @@ import { instrumentSerif } from "@/lib/fuentes";
 import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 import { getPublicRegistrationCount } from "@/infrastructure/registration/public-registration-count";
 
-export async function ContadorRegistros() {
+type ContadorRegistrosProps = {
+  dropId: string;
+};
+
+export async function ContadorRegistros({ dropId }: ContadorRegistrosProps) {
   await connection();
   let total: number;
   try {
-    total = await getPublicRegistrationCount();
+    total = await getPublicRegistrationCount(dropId);
   } catch (error) {
     log("error", "public_count_failed", { code: safeErrorCode(error) });
     return null;

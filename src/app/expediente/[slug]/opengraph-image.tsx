@@ -5,12 +5,13 @@ import { connection } from "next/server";
 import { cargarFuenteMaquina, ExpedienteImagen } from "@/app/expediente/expediente-imagen";
 import OpenGraphImage from "@/app/opengraph-image";
 import { getExpediente } from "@/application/registration/get-expediente";
+import { formatDropDateStamp, formatDropNumber } from "@/domain/drop/drop";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 import { PIECE_STATUS_LABELS, SIZE_LABELS } from "@/domain/registration/piece-status";
 import { getRateLimitSubject, getRawClientIp } from "@/infrastructure/http/client-ip";
 import { expedienteDependencies } from "@/infrastructure/registration/registration-runtime";
 
-export const alt = "Expediente del Archivo 001 de drmr";
+export const alt = "Expediente de drmr";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -33,16 +34,20 @@ export default async function ExpedienteOpenGraphImage({
 
   const fuente = await cargarFuenteMaquina();
   const registro = formatRegistrationNumber(expediente.registrationNumber);
+  const folio = formatDropNumber(expediente.drop.number);
+  const apertura = formatDropDateStamp(expediente.drop.registeredOpensAt);
 
   return new ImageResponse(
     (
       <ExpedienteImagen
         ancho={size.width}
         alto={size.height}
+        folio={folio}
         registro={registro}
         nombre={expediente.firstName.toLowerCase()}
         talla={SIZE_LABELS[expediente.size].toLowerCase()}
         estado={PIECE_STATUS_LABELS[expediente.pieceStatus]}
+        apertura={apertura}
       />
     ),
     {

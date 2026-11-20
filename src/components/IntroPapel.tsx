@@ -1,10 +1,9 @@
 "use client";
 
-import { useRef } from "react";
+import { type ReactNode, useRef } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { HojaExpediente } from "@/components/HojaExpediente";
 import { cuadroBola, totalCuadrosBola } from "@/lib/secuencia-bola";
 
 gsap.registerPlugin(useGSAP);
@@ -90,7 +89,11 @@ function recortePorLetras(avances: number[]): string {
   return `polygon(0% 100%, ${puntos.join(", ")}, 100% 100%)`;
 }
 
-export function IntroPapel() {
+type IntroPapelProps = {
+  hoja: ReactNode;
+};
+
+export function IntroPapel({ hoja }: IntroPapelProps) {
   const capa = useRef<HTMLDivElement>(null);
   const papel = useRef<HTMLDivElement>(null);
   const bola = useRef<HTMLDivElement>(null);
@@ -105,9 +108,9 @@ export function IntroPapel() {
         return;
       }
       const imagen = dibujo.current;
-      const hoja = papel.current;
+      const hojaPapel = papel.current;
       const bolaPapel = bola.current;
-      if (!imagen || !hoja || !bolaPapel) return;
+      if (!imagen || !hojaPapel || !bolaPapel) return;
 
       const linea = gsap.timeline({ onComplete: marcarIntroVista });
 
@@ -137,7 +140,7 @@ export function IntroPapel() {
       linea.set(imagen, { x: 0, y: 0, rotation: 0, clipPath: "none" }, INICIO_ARRUGA);
 
       const lienzo = { ancho: bolaPapel.offsetWidth, alto: bolaPapel.offsetHeight };
-      linea.set(hoja, { visibility: "hidden" }, INICIO_ARRUGA);
+      linea.set(hojaPapel, { visibility: "hidden" }, INICIO_ARRUGA);
 
       const totalCuadros = totalCuadrosBola(ETAPAS_BOLA.length);
       let etapaVisible: HTMLImageElement | null = null;
@@ -171,7 +174,7 @@ export function IntroPapel() {
           ref={papel}
           className="absolute inset-0 grid place-items-center bg-papel bg-[url(/textura-papel.jpg)] bg-cover bg-center px-4"
         >
-          <HojaExpediente />
+          {hoja}
           <Image
             ref={dibujo}
             src="/drmr-logo.svg"

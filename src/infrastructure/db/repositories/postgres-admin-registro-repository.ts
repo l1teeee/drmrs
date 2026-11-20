@@ -17,11 +17,18 @@ import { inTransaction } from "../transaction";
 
 const transactionSettings = ["SET LOCAL lock_timeout = '3s'", "SET LOCAL statement_timeout = '5s'"];
 
-const registrationColumns = `id, registration_number, full_name, instagram_handle,
-  whatsapp_ciphertext, email_ciphertext, size, archive_nominee, source, origin,
-  piece_status, link_version, registered_at`;
+const registrationColumns = `r.id, r.registration_number, r.full_name, r.instagram_handle,
+  r.whatsapp_ciphertext, r.email_ciphertext, r.size, r.archive_nominee, r.source, r.origin,
+  r.piece_status, r.link_version, r.registered_at,
+  d.id AS drop_id, d.number AS drop_number, d.name AS drop_name,
+  d.registered_opens_at AS drop_registered_opens_at, d.public_opens_at AS drop_public_opens_at`;
 
 interface RegistrationRow {
+  drop_id: string;
+  drop_number: number;
+  drop_name: string;
+  drop_registered_opens_at: Date;
+  drop_public_opens_at: Date;
   id: string;
   registration_number: number;
   full_name: string;
@@ -53,6 +60,7 @@ interface AuditRow {
   metadata: Record<string, unknown>;
   registro_id: string | null;
   registro_numero: number | null;
+  registro_drop_number: number | null;
   registro_nombre: string | null;
   registro_instagram: string | null;
 }
@@ -60,6 +68,11 @@ interface AuditRow {
 function toAdminRegistro(row: RegistrationRow): AdminRegistroRow {
   const key = getEnv().PII_ENCRYPTION_KEY;
   return {
+    dropId: row.drop_id,
+    dropNumber: row.drop_number,
+    dropName: row.drop_name,
+    dropRegisteredOpensAt: row.drop_registered_opens_at,
+    dropPublicOpensAt: row.drop_public_opens_at,
     id: row.id,
     registrationNumber: row.registration_number,
     fullName: row.full_name,
@@ -97,20 +110,21 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
   async list(filters: ListFilters): Promise<AdminRegistroRow[]> {
     const query = filters.q ? `%${filters.q.replace(/[\\%_]/g, "\\$&")}%` : null;
     const result = await getPool().query<RegistrationRow>(
-      `SELECT ${registrationColumns} FROM registrations
-        WHERE ($1::text IS NULL OR full_name ILIKE $1 ESCAPE '\\'
-                               OR instagram_handle ILIKE $1 ESCAPE '\\')
-          AND ($2::text IS NULL OR piece_status = $2)
-          AND ($3::text IS NULL OR size = $3)
-        ORDER BY registration_number`,
-      [query, filters.estado ?? null, filters.talla ?? null],
+      `SELECT ${registrationColumns} FROM registrations r JOIN drops d ON d.id = r.drop_id
+        WHERE ($1::text IS NULL OR r.full_name ILIKE $1 ESCAPE '\\'
+                               OR r.instagram_handle ILIKE $1 ESCAPE '\\')
+          AND ($2::text IS NULL OR r.piece_status = $2)
+          AND ($3::text IS NULL OR r.size = $3)
+          AND ($4::uuid IS NULL OR r.drop_id = $4)
+        ORDER BY d.number, r.registration_number`,
+      [query, filters.estado ?? null, filters.talla ?? null, filters.dropId ?? null],
     );
     return result.rows.map(toAdminRegistro);
   }
 
   async findById(id: string): Promise<AdminRegistroRow | null> {
     const result = await getPool().query<RegistrationRow>(
-      `SELECT ${registrationColumns} FROM registrations WHERE id = $1`,
+      `SELECT ${registrationColumns} FROM registrations r JOIN drops d ON d.id = r.drop_id WHERE r.id = $1`,
       [id],
     );
     const row = result.rows[0];
@@ -178,9 +192,9 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
     });
   }
 
-  async recordExport(adminId: string, count: number): Promise<void> {
+  async recordExport(adminId: string, count: number, dropNumber: number | null): Promise<void> {
     await inTransaction(getPool(), transactionSettings, async (client) => {
-      await insertAudit(client, adminId, "REGISTRATIONS_EXPORTED", "registration", null, { count });
+      await insertAudit(client, adminId, "REGISTRATIONS_EXPORTED", "registration", null, { count, dropNumber });
     });
   }
 
@@ -196,10 +210,12 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
       `SELECT a.id, a.occurred_at, u.display_name AS actor_name, a.action,
               a.entity_type, a.entity_id, a.metadata,
               r.id AS registro_id, r.registration_number AS registro_numero,
+              d.number AS registro_drop_number,
               r.full_name AS registro_nombre, r.instagram_handle AS registro_instagram
          FROM audit_logs a
          LEFT JOIN admin_users u ON u.id = a.actor_admin_id
          LEFT JOIN registrations r ON a.entity_type = 'registration' AND r.id::text = a.entity_id
+         LEFT JOIN drops d ON d.id = r.drop_id
         ORDER BY a.id DESC LIMIT $2 OFFSET $1`,
       [offset, limit],
     );
@@ -217,6 +233,7 @@ export class PostgresAdminRegistroRepository implements AdminRegistroStore {
           : {
               id: row.registro_id,
               numero: row.registro_numero!,
+              dropNumber: row.registro_drop_number!,
               nombre: row.registro_nombre!,
               instagram: row.registro_instagram!,
             },
