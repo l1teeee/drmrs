@@ -35,15 +35,27 @@ export async function GET(request: Request): Promise<Response> {
   const cookie = (await cookies()).get("drmr_ig_oauth_state")?.value;
   const params = new URL(request.url).searchParams;
   const state = params.get("state");
-  if (!state || !cookie) return responseFor("error");
+  if (!state || !cookie) {
+    log("warn", "instagram_connect_failed", { code: "STATE_MISSING" });
+    return responseFor("error");
+  }
   const supplied = Buffer.from(state);
   const expected = Buffer.from(cookie);
   if (supplied.length !== expected.length || !timingSafeEqual(supplied, expected)) {
+    log("warn", "instagram_connect_failed", { code: "STATE_MISMATCH" });
     return responseFor("error");
   }
-  if (params.has("error")) return responseFor("error");
+  if (params.has("error")) {
+    const errorReason = params.get("error_reason");
+    const reason = errorReason !== null && /^[a-z_]{1,40}$/.test(errorReason) ? errorReason : "unknown";
+    log("warn", "instagram_connect_failed", { code: "OAUTH_ERROR", reason });
+    return responseFor("error");
+  }
   const code = params.get("code");
-  if (!code) return responseFor("error");
+  if (!code) {
+    log("warn", "instagram_connect_failed", { code: "CODE_MISSING" });
+    return responseFor("error");
+  }
   try {
     const result = await completeConfiguredInstagramConnection(code, authorization.admin.adminId);
     if (!result.ok) {
