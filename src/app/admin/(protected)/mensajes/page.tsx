@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 
-import { listUnlinkedContacts, listUnsentMessages } from "@/application/messaging/admin-messages";
+import { listConversations, listUnlinkedContacts, listUnsentMessages } from "@/application/messaging/admin-messages";
 import { TransicionPagina } from "@/components/TransicionPagina";
 import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
@@ -40,6 +40,7 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
   const deps = adminMessagesDependencies();
   const unsent = await listUnsentMessages(deps);
   const unlinked = await listUnlinkedContacts(deps);
+  const conversaciones = await listConversations(deps);
 
   return (
     <TransicionPagina>
@@ -80,7 +81,12 @@ export default async function MensajesPage({ searchParams }: { searchParams: Sea
           {instagramParam === "error" && <p className={ETIQUETA}>No se pudo conectar. Intenta de nuevo.</p>}
         </div>
 
-        <section className="grid gap-8 sm:grid-cols-2">
+        <section className="grid gap-8 sm:grid-cols-3">
+          <Link href={adminHref("/mensajes/todos")} className={`grid content-start gap-2 border-t ${REGLA} pt-4`}>
+            <span className={`${NUMERO} text-[56px] leading-none`}>{conversaciones.length}</span>
+            <span className={ETIQUETA}>todos los chats</span>
+            <span className={`${ENLACE} text-[14px]`}>Ver todos →</span>
+          </Link>
           <Link href={adminHref("/mensajes/sin-enviar")} className={`grid content-start gap-2 border-t ${REGLA} pt-4`}>
             <span className={`${NUMERO} text-[56px] leading-none`}>{unsent.length}</span>
             <span className={ETIQUETA}>sin enviar</span>

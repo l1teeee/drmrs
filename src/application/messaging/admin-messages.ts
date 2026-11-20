@@ -71,6 +71,20 @@ export interface UnlinkedContact {
   lastInboundText: string | null;
 }
 
+export interface ConversationSummary {
+  registrationId: string | null;
+  contactId: string | null;
+  registrationNumber: number | null;
+  fullName: string | null;
+  instagramHandle: string | null;
+  contactUsername: string | null;
+  contactDisplayName: string | null;
+  lastDirection: "IN" | "OUT";
+  lastBody: string;
+  lastAt: Date;
+  total: number;
+}
+
 export interface AdminMessageStore {
   enqueue(
     adminId: string | null,
@@ -90,6 +104,7 @@ export interface AdminMessageStore {
   getConversation(registrationId: string): Promise<Conversation | null>;
   listUnsentMessages(): Promise<UnsentMessage[]>;
   listUnlinkedContacts(): Promise<UnlinkedContact[]>;
+  listConversations(): Promise<ConversationSummary[]>;
 }
 
 export interface AdminMessagesDependencies {
@@ -218,4 +233,8 @@ export function listUnsentMessages(deps: AdminMessagesDependencies) {
 
 export function listUnlinkedContacts(deps: AdminMessagesDependencies) {
   return deps.store.listUnlinkedContacts();
+}
+
+export function listConversations(deps: AdminMessagesDependencies) {
+  return deps.store.listConversations();
 }

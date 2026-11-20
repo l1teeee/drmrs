@@ -5,6 +5,7 @@ import type {
   AdminMessageStore,
   Conversation,
   ConversationMessage,
+  ConversationSummary,
   EnqueueMessageResult,
   QueuedMessageStatus,
   RegistrationWindowState,
@@ -288,6 +289,32 @@ export class PostgresAdminMessageRepository implements AdminMessageStore {
         WHERE c.last_inbound_at >= now() - interval '30 days'
           AND NOT EXISTS (SELECT 1 FROM registrations r WHERE r.messaging_contact_id = c.id)
         ORDER BY c.last_inbound_at DESC, c.id LIMIT 200`,
+    );
+    return result.rows;
+  }
+
+  async listConversations(): Promise<ConversationSummary[]> {
+    const result = await getPool().query<ConversationSummary>(
+      `WITH ultimos AS (
+         SELECT DISTINCT ON (COALESCE(m.registration_id::text, 'c:' || m.contact_id::text))
+                m.registration_id, m.contact_id, m.direction, m.body, m.created_at
+           FROM messages m
+          WHERE m.registration_id IS NOT NULL OR m.contact_id IS NOT NULL
+          ORDER BY COALESCE(m.registration_id::text, 'c:' || m.contact_id::text), m.created_at DESC, m.id DESC
+       )
+       SELECT u.registration_id AS "registrationId",
+              CASE WHEN u.registration_id IS NULL THEN u.contact_id END AS "contactId",
+              r.registration_number AS "registrationNumber", r.full_name AS "fullName",
+              r.instagram_handle AS "instagramHandle",
+              c.username AS "contactUsername", c.display_name AS "contactDisplayName",
+              u.direction AS "lastDirection", left(u.body, 140) AS "lastBody", u.created_at AS "lastAt",
+              (SELECT count(*)::int FROM messages x
+                WHERE (u.registration_id IS NOT NULL AND x.registration_id = u.registration_id)
+                   OR (u.registration_id IS NULL AND x.registration_id IS NULL AND x.contact_id = u.contact_id)) AS total
+         FROM ultimos u
+         LEFT JOIN registrations r ON r.id = u.registration_id
+         LEFT JOIN messaging_contacts c ON c.id = u.contact_id
+        ORDER BY u.created_at DESC`,
     );
     return result.rows;
   }
