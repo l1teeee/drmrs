@@ -22,7 +22,7 @@ async function connectedInstagramUsername(): Promise<string | null> {
   }
 }
 
-async function instagramLinkFor(code: string): Promise<string | null> {
+async function instagramLinkFor(code: string | null): Promise<string | null> {
   const { MESSAGING_MODE: mode, INSTAGRAM_BUSINESS_USERNAME: configuredUsername } = getEnv();
   if (mode !== "instagram" && mode !== "log") {
     return null;
@@ -30,6 +30,9 @@ async function instagramLinkFor(code: string): Promise<string | null> {
   const username = configuredUsername ?? (await connectedInstagramUsername());
   if (!username) {
     return null;
+  }
+  if (code === null) {
+    return `https://ig.me/m/${username}`;
   }
   return `https://ig.me/m/${username}?ref=${code}`;
 }

@@ -8,7 +8,7 @@ import type { ExpedienteCodes, RegistrationStore } from "./registration-store";
 export interface SubmitRegistrationDependencies {
   store: RegistrationStore;
   codes: ExpedienteCodes;
-  instagramLinkFor: (code: string) => Promise<string | null>;
+  instagramLinkFor: (code: string | null) => Promise<string | null>;
   queueWelcome: (registrationId: string) => Promise<void>;
   botVerifier: BotVerifier;
   checkIp: RateLimitCheck;
@@ -21,12 +21,14 @@ export type SubmitRegistrationResult =
       registrationNumber: number;
       expedientePath: string;
       instagramLink: string | null;
+      linkCode: string | null;
     }
   | {
       kind: "existing";
       registrationNumber: number | null;
       expedientePath: string | null;
       instagramLink: string | null;
+      linkCode: string | null;
     }
   | { kind: "invalid" }
   | { kind: "bot_rejected" }
@@ -69,8 +71,15 @@ export async function submitRegistration(
 
   if (outcome.kind === "existing") {
     // Without the Instagram match, the number would confirm that this WhatsApp is registered.
+    // A plain chat link reveals nothing about the registration.
     if (!outcome.instagramMatches) {
-      return { kind: "existing", registrationNumber: null, expedientePath: null, instagramLink: null };
+      return {
+        kind: "existing",
+        registrationNumber: null,
+        expedientePath: null,
+        instagramLink: await deps.instagramLinkFor(null),
+        linkCode: null,
+      };
     }
 
     return {
@@ -81,6 +90,7 @@ export async function submitRegistration(
         deps.codes.codeFor(outcome.id, outcome.linkVersion),
       ),
       instagramLink: outcome.igLinkCode !== null ? await deps.instagramLinkFor(outcome.igLinkCode) : null,
+      linkCode: outcome.igLinkCode,
     };
   }
 
@@ -94,5 +104,6 @@ export async function submitRegistration(
       deps.codes.codeFor(outcome.id, outcome.linkVersion),
     ),
     instagramLink: outcome.igLinkCode !== null ? await deps.instagramLinkFor(outcome.igLinkCode) : null,
+    linkCode: outcome.igLinkCode,
   };
 }

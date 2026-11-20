@@ -2,11 +2,12 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { enlaceWhatsappRegistro } from "@/lib/registro/enlaces";
 import { formatearNumeroRegistro, formatearTelefono } from "@/lib/registro/formato";
+import { archivoBlack, FUENTES_CICLO } from "./fuentes-numero";
 
 gsap.registerPlugin(useGSAP);
 
@@ -19,8 +20,15 @@ type ConfirmacionRegistroProps = {
   instagram: string;
   expediente: string | null;
   instagramLink: string | null;
+  codigo: string | null;
   onCorregir: () => void;
 };
+
+function mensajeInstagram(numero: number, codigo: string | null): string {
+  if (numero > 0 && codigo) return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)}. Código: ${codigo}`;
+  if (numero > 0) return `Hola drmr, soy el registro No. ${formatearNumeroRegistro(numero)}.`;
+  return "Hola drmr, ya estoy en el archivo.";
+}
 
 export function ConfirmacionRegistro({
   numero,
@@ -29,13 +37,25 @@ export function ConfirmacionRegistro({
   instagram,
   expediente,
   instagramLink,
+  codigo,
   onCorregir,
 }: ConfirmacionRegistroProps) {
+  const [copiado, setCopiado] = useState(false);
   const escena = useRef<HTMLDivElement>(null);
   const tinta = useRef<HTMLDivElement>(null);
   const grano = useRef<HTMLDivElement>(null);
   const sello = useRef<HTMLDivElement>(null);
   const cifra = useRef<HTMLParagraphElement>(null);
+  const trazo = useRef<SVGPathElement>(null);
+
+  async function copiarMensaje() {
+    try {
+      await navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
+      setCopiado(true);
+    } catch {
+      setCopiado(false);
+    }
+  }
 
   useGSAP(
     () => {
@@ -79,10 +99,37 @@ export function ConfirmacionRegistro({
             ease: "steps(12)",
             onUpdate: () => {
               destino.textContent = formatearNumeroRegistro(Math.round(contador.valor));
+              destino.style.fontFamily = FUENTES_CICLO[Math.round(contador.valor) % FUENTES_CICLO.length]!;
+            },
+            onComplete: () => {
+              destino.style.fontFamily = "";
             },
           },
           "<",
         );
+
+        // Keeps changing the font now and then after the number settles.
+        const cambio = { paso: 0 };
+        gsap
+          .timeline({ repeat: -1, repeatDelay: 3.5, delay: linea.duration() + 1.5 })
+          .to(cambio, {
+            paso: FUENTES_CICLO.length,
+            duration: FUENTES_CICLO.length * CUADRO,
+            ease: `steps(${FUENTES_CICLO.length})`,
+            onUpdate: () => {
+              destino.style.fontFamily = FUENTES_CICLO[Math.floor(cambio.paso) % FUENTES_CICLO.length]!;
+            },
+            onComplete: () => {
+              destino.style.fontFamily = "";
+              cambio.paso = 0;
+            },
+          });
+      }
+
+      if (numero === 0 && trazo.current) {
+        const largo = trazo.current.getTotalLength();
+        gsap.set(trazo.current, { strokeDasharray: largo, strokeDashoffset: largo });
+        linea.to(trazo.current, { strokeDashoffset: 0, duration: 0.7, ease: "power2.inOut" }, "<");
       }
 
       linea.from(
@@ -119,12 +166,28 @@ export function ConfirmacionRegistro({
         <p data-aparece className="mt-8 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">
           registro no.
         </p>
-        <p
-          ref={cifra}
-          className="text-[clamp(96px,18vw,200px)] font-extralight leading-none tracking-[-0.05em] tabular-nums"
-        >
-          {numero ? formatearNumeroRegistro(numero) : "✓"}
-        </p>
+        {numero ? (
+          <p
+            ref={cifra}
+            className={`${archivoBlack.className} flex h-[clamp(96px,18vw,200px)] items-center justify-center text-[clamp(96px,18vw,200px)] leading-none tracking-[-0.02em] tabular-nums`}
+          >
+            {formatearNumeroRegistro(numero)}
+          </p>
+        ) : (
+          <div className="flex h-[clamp(96px,18vw,200px)] items-center justify-center" aria-hidden="true">
+            <svg viewBox="0 0 120 120" className="h-full w-auto">
+              <path
+                ref={trazo}
+                d="M24 62 Q38 76 50 98 Q68 52 102 14"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="9"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        )}
 
         <h2
           id="titulo-confirmacion"
@@ -138,8 +201,8 @@ export function ConfirmacionRegistro({
           <p data-aparece className="mt-4 text-[16px] leading-[1.55] text-white/85">
             {instagramLink ? (
               <>
-                Para avisarte por Instagram, ábrenos el chat desde <b>@{instagram}</b> y mándanos un
-                hola. Si no, te escribimos por WhatsApp al <b>{formatearTelefono(telefono)}</b>.
+                Último paso: mándanos un mensaje por Instagram desde <b>@{instagram}</b> para recibir tu
+                bienvenida. Si no, te escribimos por WhatsApp al <b>{formatearTelefono(telefono)}</b>.
               </>
             ) : (
               <>
@@ -148,6 +211,23 @@ export function ConfirmacionRegistro({
               </>
             )}
           </p>
+        )}
+
+        {instagramLink && (
+          <div data-aparece className="mt-6 flex flex-col items-center gap-2">
+            <a
+              href={instagramLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={copiarMensaje}
+              className="inline-flex items-center justify-center border border-white px-6 py-4 text-[16px] font-medium text-white transition-colors duration-300 hover:bg-white hover:text-azul focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none"
+            >
+              Enviar mensaje por Instagram
+            </a>
+            <p aria-live="polite" className="text-[13px] text-white/70">
+              {copiado ? "Mensaje copiado. Pégalo en el chat y envíalo." : "Te copiamos un mensaje corto para iniciar el chat."}
+            </p>
+          </div>
         )}
 
         {numero >= 1 && numero <= 10 && (
@@ -165,16 +245,6 @@ export function ConfirmacionRegistro({
             <Link href={expediente} className="underline underline-offset-4 hover:text-white/80">
               Ver tu expediente →
             </Link>
-          )}
-          {instagramLink && (
-            <a
-              href={instagramLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-4 hover:text-white/80"
-            >
-              Abrir Instagram →
-            </a>
           )}
           {telefono && (
             <button type="button" onClick={onCorregir} className="underline underline-offset-4 hover:text-white/80">

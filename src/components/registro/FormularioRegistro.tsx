@@ -50,6 +50,7 @@ type Resultado = {
   instagram: string;
   expediente: string | null;
   instagramLink: string | null;
+  codigo: string | null;
 };
 
 type Intento = { respuesta: RespuestaRegistro | null; huboReintento: boolean };
@@ -73,6 +74,7 @@ const RESULTADO_DE_PRUEBA: Resultado = {
   instagram: "drmrs.archive",
   expediente: null,
   instagramLink: null,
+  codigo: null,
 };
 
 function esperar(ms: number): Promise<void> {
@@ -200,6 +202,7 @@ export function FormularioRegistro() {
         instagram: "",
         expediente: null,
         instagramLink: null,
+        codigo: null,
       });
       return;
     }
@@ -237,6 +240,7 @@ export function FormularioRegistro() {
         instagram,
         expediente: respuesta.expediente ?? null,
         instagramLink: respuesta.instagram ?? null,
+        codigo: respuesta.codigo ?? null,
       });
       return;
     }
@@ -469,6 +473,7 @@ export function FormularioRegistro() {
           instagram={resultado.instagram}
           expediente={resultado.expediente}
           instagramLink={resultado.instagramLink}
+          codigo={resultado.codigo}
           onCorregir={corregir}
         />
       )}

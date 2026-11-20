@@ -61,10 +61,15 @@ export async function POST(request: Request) {
           existente: false,
           expediente: result.expedientePath,
           ...(result.instagramLink !== null ? { instagram: result.instagramLink } : {}),
+          ...(result.linkCode !== null ? { codigo: result.linkCode } : {}),
         });
       case "existing":
         if (result.registrationNumber === null) {
-          return jsonResponse(200, { ok: true, existente: true });
+          return jsonResponse(200, {
+            ok: true,
+            existente: true,
+            ...(result.instagramLink !== null ? { instagram: result.instagramLink } : {}),
+          });
         }
         return jsonResponse(200, {
           ok: true,
@@ -72,6 +77,7 @@ export async function POST(request: Request) {
           existente: true,
           ...(result.expedientePath !== null ? { expediente: result.expedientePath } : {}),
           ...(result.instagramLink !== null ? { instagram: result.instagramLink } : {}),
+          ...(result.linkCode !== null ? { codigo: result.linkCode } : {}),
         });
       case "invalid":
         return jsonResponse(400, { ok: false, error: "datos" });

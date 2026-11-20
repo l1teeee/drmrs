@@ -19,6 +19,7 @@ export type RespuestaRegistro = {
   existente?: boolean;
   expediente?: string;
   instagram?: string;
+  codigo?: string;
   error?: string;
 };
 
