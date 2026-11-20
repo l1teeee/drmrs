@@ -91,6 +91,8 @@ export default async function ConversacionPage({
     return { key, label: TEMPLATE_LABELS[key], texto };
   });
 
+  const mostrarFotos = photosEnabledFor(piece.pieceStatus) || fotoIds.length > 0;
+
   return (
     <TransicionPagina>
       <DisposicionConversacion
@@ -117,11 +119,13 @@ export default async function ConversacionPage({
               </div>
             </div>
 
-            <FotosPieza
-              registrationId={registration.id}
-              fotoIds={fotoIds}
-              habilitado={photosEnabledFor(piece.pieceStatus)}
-            />
+            {mostrarFotos && (
+              <FotosPieza
+                registrationId={registration.id}
+                fotoIds={fotoIds}
+                habilitado={photosEnabledFor(piece.pieceStatus)}
+              />
+            )}
           </>
         }
         encabezado={
