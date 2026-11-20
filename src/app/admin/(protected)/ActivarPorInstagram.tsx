@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
+import { esDispositivoMovil, urlPerfilInstagram } from "@/lib/instagram/enlace-chat";
+
 import { ENLACE, ETIQUETA } from "../ui";
 
 import { recordActivationSentAction } from "./mensajes/actions";
 
-type Feedback = "copied" | "failed" | null;
+type Feedback = "copied" | "copied-desktop" | "failed" | null;
 
 interface ActivarPorInstagramProps {
   registrationId: string;
@@ -47,10 +49,17 @@ export function ActivarPorInstagram({
 
   const cleanUsername = username.replace(/^@/, "");
 
-  async function handleClick() {
-    let result: Feedback = "copied";
+  async function handleClick(event: React.MouseEvent<HTMLAnchorElement>) {
+    const copia = navigator.clipboard.writeText(text);
+    const escritorio = !esDispositivoMovil();
+    if (escritorio) {
+      event.preventDefault();
+      window.open(urlPerfilInstagram(cleanUsername), "_blank", "noopener,noreferrer");
+    }
+    let result: Feedback;
     try {
-      await navigator.clipboard.writeText(text);
+      await copia;
+      result = escritorio ? "copied-desktop" : "copied";
     } catch {
       result = "failed";
     }
@@ -79,9 +88,11 @@ export function ActivarPorInstagram({
   const label =
     feedback === "copied"
       ? "Copiado"
-      : feedback === "failed"
-        ? "No se pudo copiar"
-        : "Activar por Instagram";
+      : feedback === "copied-desktop"
+        ? "Copiado: pulsa Enviar mensaje"
+        : feedback === "failed"
+          ? "No se pudo copiar"
+          : "Activar por Instagram";
 
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">

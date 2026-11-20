@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRef, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import { esDispositivoMovil, urlPerfilInstagram, usuarioDesdeEnlaceIgMe } from "@/lib/instagram/enlace-chat";
 import { enlaceWhatsappRegistro } from "@/lib/registro/enlaces";
 import { formatearNumeroRegistro, formatearTelefono } from "@/lib/registro/formato";
 import { archivoBlack, FUENTES_CICLO } from "./fuentes-numero";
@@ -40,7 +41,7 @@ export function ConfirmacionRegistro({
   codigo,
   onCorregir,
 }: ConfirmacionRegistroProps) {
-  const [copiado, setCopiado] = useState(false);
+  const [copiado, setCopiado] = useState<"movil" | "escritorio" | null>(null);
   const escena = useRef<HTMLDivElement>(null);
   const tinta = useRef<HTMLDivElement>(null);
   const grano = useRef<HTMLDivElement>(null);
@@ -48,12 +49,19 @@ export function ConfirmacionRegistro({
   const cifra = useRef<HTMLParagraphElement>(null);
   const trazo = useRef<SVGPathElement>(null);
 
-  async function copiarMensaje() {
+  async function copiarMensaje(event: React.MouseEvent<HTMLAnchorElement>) {
+    const copia = navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
+    const escritorio = !esDispositivoMovil();
+    const usuario = instagramLink ? usuarioDesdeEnlaceIgMe(instagramLink) : null;
+    if (escritorio && usuario !== null) {
+      event.preventDefault();
+      window.open(urlPerfilInstagram(usuario), "_blank", "noopener,noreferrer");
+    }
     try {
-      await navigator.clipboard.writeText(mensajeInstagram(numero, codigo));
-      setCopiado(true);
+      await copia;
+      setCopiado(escritorio ? "escritorio" : "movil");
     } catch {
-      setCopiado(false);
+      setCopiado(null);
     }
   }
 
@@ -223,7 +231,11 @@ export function ConfirmacionRegistro({
               Enviar mensaje por Instagram
             </a>
             <p aria-live="polite" className="min-h-[1.25rem] text-[13px] text-white/70">
-              {copiado ? "Copiado. Pégalo y envíalo." : ""}
+              {copiado === "escritorio"
+                ? "Copiado. Pulsa Enviar mensaje y pégalo."
+                : copiado === "movil"
+                  ? "Copiado. Pégalo y envíalo."
+                  : ""}
             </p>
           </div>
         )}

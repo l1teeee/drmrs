@@ -6,6 +6,7 @@ import { adminHref } from "@/infrastructure/admin/admin-path";
 import { requireAdmin } from "@/infrastructure/auth/require-admin";
 
 import { REGLA, ENLACE } from "../ui";
+import { AutoRefresco } from "./AutoRefresco";
 import { ContenidoAdmin } from "./ContenidoAdmin";
 import { NavArchivo } from "./NavArchivo";
 import { signOut } from "./actions";
@@ -26,6 +27,7 @@ export default async function ProtectedLayout({ children }: { children: React.Re
 
   return (
     <div className="flex min-h-dvh flex-col md:h-dvh md:min-h-0">
+      <AutoRefresco />
       <div className={`${MARGEN_X} shrink-0 pt-[clamp(16px,2.5vw,28px)]`}>
         <header className={`flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b ${REGLA} pb-4`}>
           <Link href={adminHref("/registros")} aria-label="drmr, registros">
