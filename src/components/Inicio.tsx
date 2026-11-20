@@ -27,7 +27,7 @@ export function Inicio() {
       <section className="grid place-items-center text-center">
         <div>
           <TituloArchivo />
-          <div className="mt-5 text-[clamp(44px,6vw,92px)] font-extralight leading-none tracking-[-0.04em]">
+          <div className="mt-5 text-[clamp(28px,8.5vw,56px)] md:text-[clamp(56px,6vw,92px)] font-extralight leading-none tracking-[-0.04em]">
             <CuentaRegresiva />
           </div>
           <p className="mt-4 font-mono text-[12px] uppercase tracking-[0.08em] text-white/80">

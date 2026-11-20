@@ -42,7 +42,7 @@ async function uploadErrorMessage(response: Response): Promise<string> {
   if (response.status === 429) return "Demasiados cambios, espera un momento.";
   if (response.status === 409) {
     const body: { error?: string } = await response.json();
-    return body.error === "etapa" ? ETAPA_TEXTO : "Ya hay 6 fotos.";
+    return body.error === "etapa" ? ETAPA_TEXTO : `Ya hay ${MAX_PIECE_PHOTOS} fotos.`;
   }
   return NO_SE_PUDO_SUBIR;
 }

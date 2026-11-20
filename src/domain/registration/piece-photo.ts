@@ -1,7 +1,7 @@
 import type { PieceStatus } from "./registration";
 
 export const MAX_PIECE_PHOTO_BYTES = 1_048_576;
-export const MAX_PIECE_PHOTOS = 6;
+export const MAX_PIECE_PHOTOS = 20;
 
 export type PiecePhotoContentType = "image/jpeg" | "image/png" | "image/webp";
 
