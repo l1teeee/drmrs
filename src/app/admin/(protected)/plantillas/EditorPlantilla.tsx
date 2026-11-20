@@ -1,7 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useLayoutEffect, useRef, useState, useTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import {
   DROP_DATE_LABEL,
@@ -44,9 +50,16 @@ export function EditorPlantilla({
   const router = useRouter();
   const [body, setBody] = useState(initialBody);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  const [abierta, setAbierta] = useState(false);
   const [isPending, startTransition] = useTransition();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (abierta) {
+      textareaRef.current?.focus();
+    }
+  }, [abierta]);
 
   useLayoutEffect(() => {
     const cursor = pendingCursorRef.current;
@@ -89,6 +102,7 @@ export function EditorPlantilla({
       });
       if (result.ok) {
         setFeedback({ message: "Guardado.", failed: false });
+        setAbierta(false);
         router.refresh();
         return;
       }
@@ -111,11 +125,35 @@ export function EditorPlantilla({
   }
 
   return (
-    <section className={`grid gap-4 border-t ${REGLA} pt-8`}>
+    <section
+      className={`grid content-start gap-4 border-t ${REGLA} pt-6 ${abierta ? "md:col-span-2 xl:col-span-3" : ""}`}
+    >
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <h2 className="text-[20px] font-medium tracking-[-0.02em]">{title}</h2>
         <span className={ETIQUETA}>editada {updatedAtLabel}</span>
       </div>
+      {!abierta ? (
+        <>
+          <p className="line-clamp-4 whitespace-pre-wrap break-words text-[15px] text-tinta/70">
+            {renderMessageTemplate(body, SAMPLE_VALUES)}
+          </p>
+          {feedback !== null && !feedback.failed ? (
+            <span aria-live="polite" className={ETIQUETA}>
+              {feedback.message}
+            </span>
+          ) : null}
+          <button
+            type="button"
+            aria-expanded={false}
+            aria-controls={`editor-${templateKey}`}
+            onClick={() => setAbierta(true)}
+            className={`${ENLACE} justify-self-start text-[14px]`}
+          >
+            Editar
+          </button>
+        </>
+      ) : (
+      <div id={`editor-${templateKey}`} className="grid gap-4">
       <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1 font-mono text-[13px] text-tinta/60">
         <span>Variables:</span>
         {TEMPLATE_VARIABLES.map((variable) => (
@@ -168,7 +206,23 @@ export function EditorPlantilla({
             {feedback?.message}
           </span>
         )}
+        <button
+          type="button"
+          disabled={isPending}
+          aria-expanded={true}
+          aria-controls={`editor-${templateKey}`}
+          onClick={() => {
+            setBody(initialBody);
+            setFeedback(null);
+            setAbierta(false);
+          }}
+          className={`${ENLACE} text-[14px]`}
+        >
+          {body === initialBody ? "Cerrar" : "Cancelar"}
+        </button>
       </div>
+      </div>
+      )}
     </section>
   );
 }
