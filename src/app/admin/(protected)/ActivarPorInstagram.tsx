@@ -62,7 +62,7 @@ export function ActivarPorInstagram({
     setFeedback(result);
     setTimeout(() => {
       setFeedback(null);
-    }, result === "copied" ? 8000 : 2000);
+    }, 2000);
   }
 
   function handleMarkSent() {
@@ -81,32 +81,34 @@ export function ActivarPorInstagram({
     });
   }
 
-  const label = feedback === "failed" ? "No se pudo copiar" : "Activar por Instagram";
-
   return (
     <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-      <a
-        href={urlPerfilInstagram(cleanUsername)}
-        target={movil ? undefined : "_blank"}
-        rel="noopener noreferrer"
-        onClick={handleClick}
-        aria-live="polite"
-        className={compact ? `${ENLACE} text-[14px]` : LINK_CLASSES}
-      >
-        {compact ? (
-          label
-        ) : (
-          <>
-            <span aria-hidden="true" className={SWEEP_CLASSES} />
-            <span className="relative">{label}</span>
-          </>
+      <span className="relative inline-flex">
+        <a
+          href={urlPerfilInstagram(cleanUsername)}
+          target={movil ? undefined : "_blank"}
+          rel="noopener noreferrer"
+          onClick={handleClick}
+          className={compact ? `${ENLACE} text-[14px]` : LINK_CLASSES}
+        >
+          {compact ? (
+            "Activar por Instagram"
+          ) : (
+            <>
+              <span aria-hidden="true" className={SWEEP_CLASSES} />
+              <span className="relative">Activar por Instagram</span>
+            </>
+          )}
+        </a>
+        {feedback !== null && (
+          <span
+            role="status"
+            className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap bg-tinta px-2 py-1 font-mono text-[11px] text-white"
+          >
+            {feedback === "copied" ? "Mensaje copiado" : "No se pudo copiar"}
+          </span>
         )}
-      </a>
-      {feedback === "copied" && (
-        <span aria-live="polite" className={ETIQUETA}>
-          Copiado. En el perfil pulsa Enviar mensaje (o ⋯ › Enviar mensaje) y pega.
-        </span>
-      )}
+      </span>
       <button
         type="button"
         disabled={isPending}
