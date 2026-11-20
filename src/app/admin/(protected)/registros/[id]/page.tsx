@@ -19,6 +19,7 @@ import { adminMessagesDependencies } from "@/infrastructure/messaging/admin-mess
 import { ENLACE, ETIQUETA, FILA, REGLA, TITULO } from "../../../ui";
 import { PistaPieza } from "../PistaPieza";
 import { EnviarMensaje } from "./EnviarMensaje";
+import { MensajePendiente } from "./MensajePendiente";
 import { VincularContacto } from "./VincularContacto";
 
 const dateFormatter = new Intl.DateTimeFormat("es-MX", {
@@ -43,6 +44,16 @@ function linkLabel(linkedBy: string | null, linkCode: string | null): string {
   if (linkedBy === "USERNAME") return "por usuario de instagram";
   if (linkedBy === "MANUAL") return "a mano";
   return `sin vincular · código ${linkCode ?? "—"}`;
+}
+
+function isPendingManualSend(message: ConversationMessage): boolean {
+  return (
+    message.direction === "OUT" &&
+    message.source === "ADMIN" &&
+    (message.status === "WAITING_CONTACT" ||
+      message.status === "WAITING_WINDOW" ||
+      message.status === "FAILED")
+  );
 }
 
 function messageLabel(message: ConversationMessage): string {
@@ -131,6 +142,13 @@ export default async function ConversacionPage({
               >
                 <p className={ETIQUETA}>{messageLabel(message)}</p>
                 <p className="whitespace-pre-wrap text-[16px]">{message.body}</p>
+                {isPendingManualSend(message) && (
+                  <MensajePendiente
+                    messageId={message.id}
+                    username={registration.instagramHandle}
+                    text={message.body}
+                  />
+                )}
               </li>
             ))}
           </ul>

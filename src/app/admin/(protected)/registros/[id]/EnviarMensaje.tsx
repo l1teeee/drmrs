@@ -47,10 +47,10 @@ export function EnviarMensaje({ registrationId }: { registrationId: string }) {
       }
       if (response.status === "QUEUED") {
         setResult("En camino.");
-      } else if (response.status === "WAITING_CONTACT") {
-        setResult("Quedó en espera: se envía cuando nos escriba.");
       } else {
-        setResult("Quedó en espera: se envía cuando vuelva a escribir.");
+        setResult(
+          "Quedó en la conversación. Como aún no nos escribe, mándalo tú con Enviar por Instagram.",
+        );
       }
       if (isFree) setBody("");
       router.refresh();

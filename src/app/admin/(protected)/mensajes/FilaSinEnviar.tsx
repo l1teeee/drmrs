@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { formatRegistrationNumber } from "@/domain/registration/expediente-link";
 
 import { ENLACE, ETIQUETA, FILA, NUMERO } from "../../ui";
+import { EnviarPorInstagram } from "../EnviarPorInstagram";
 
 import { discardMessageAction, markSentManuallyAction } from "./actions";
 
@@ -58,25 +59,10 @@ export function FilaSinEnviar({
 }: FilaSinEnviarProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [copied, setCopied] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const cleanHandle = instagramHandle.replace(/^@/, "");
-
-  async function handleCopy() {
-    setError(null);
-    try {
-      await navigator.clipboard.writeText(body);
-    } catch {
-      setError("No se pudo copiar.");
-      return;
-    }
-    setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
-  }
 
   function handleMarkSent() {
     setError(null);
@@ -124,31 +110,15 @@ export function FilaSinEnviar({
         </div>
         <p className="mt-3 line-clamp-4 whitespace-pre-wrap text-[16px] text-tinta/80">{body}</p>
         <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-          <button
-            type="button"
-            onClick={handleCopy}
-            aria-label={`Copiar texto de ${fullName}`}
-            className={TEXT_ACTION}
-          >
-            {copied ? "Copiado" : "Copiar texto"}
-          </button>
-          <a
-            href={`https://ig.me/m/${cleanHandle}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label={`Abrir Instagram de ${fullName}`}
-            className={TEXT_ACTION}
-          >
-            Abrir Instagram
-          </a>
+          <EnviarPorInstagram username={instagramHandle} text={body} />
           <button
             type="button"
             disabled={isPending}
             onClick={handleMarkSent}
-            aria-label={`Marcar enviado a ${fullName}`}
+            aria-label={`Ya lo envié a ${fullName}`}
             className={TEXT_ACTION}
           >
-            {isPending ? "Marcando…" : "Marcar enviado"}
+            {isPending ? "Marcando…" : "Ya lo envié"}
           </button>
           {!confirming ? (
             <button
@@ -178,7 +148,6 @@ export function FilaSinEnviar({
           )}
         </div>
         <div aria-live="polite">
-          {copied && <span className="sr-only">Copiado</span>}
           {error && <p className={`${ETIQUETA} mt-3`}>{error}</p>}
         </div>
       </div>
