@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 
 const PANTALLA_VERTICAL = "(max-aspect-ratio: 4/5)";
 
-type Variante = "azul" | "blanco-negro";
+type Variante = "azul" | "blanco-negro" | "claro";
 
 export function FondoVideo({ variante }: { variante: Variante }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -29,12 +29,24 @@ export function FondoVideo({ variante }: { variante: Variante }) {
       preload="none"
       poster="/poster-horizontal.jpg"
       className={
-        variante === "blanco-negro"
+        variante === "claro"
+          ? "block size-full object-cover grayscale contrast-125 opacity-30 mix-blend-multiply"
+          : variante === "blanco-negro"
           ? "block size-full object-cover grayscale contrast-125"
           : "block size-full object-cover"
       }
     />
   );
+
+  if (variante === "claro") {
+    return (
+      <div aria-hidden="true" className="fixed inset-0 -z-10 bg-white">
+        {elementoVideo}
+        {/* Keeps black type readable over the dark footage. */}
+        <div className="absolute inset-0 bg-white/35" />
+      </div>
+    );
+  }
 
   if (variante === "blanco-negro") {
     return (

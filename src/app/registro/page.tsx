@@ -13,7 +13,7 @@ import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 import { toDropPublico } from "@/lib/drop-publico";
 
 export const metadata: Metadata = {
-  title: "Registro",
+  title: { absolute: "drmrs archive" },
   description: "Regístrate y entra 24 horas antes que el público a los drops de drmr.",
 };
 

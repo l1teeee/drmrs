@@ -9,6 +9,7 @@ import { getPublicCurrentDrop } from "@/infrastructure/drops/public-current-drop
 import { log, safeErrorCode } from "@/infrastructure/observability/logger";
 import { INSTAGRAM_URL, TIKTOK_URL } from "@/lib/archivo";
 import { toDropPublico } from "@/lib/drop-publico";
+import { syne } from "@/lib/fuentes";
 
 const ENLACE_PIE = "hover:text-white";
 const CLASE_FOLIO = "font-mono text-[13px] text-white/80";
@@ -95,9 +96,14 @@ export function Inicio() {
           preload
           className="h-[30px] w-auto brightness-0 invert"
         />
-        <Suspense fallback={<span className={CLASE_FOLIO}>Exp.</span>}>
-          <FolioArchivo className={CLASE_FOLIO} />
-        </Suspense>
+        <div className="flex items-center gap-4">
+          <Link href="/que-es" className="group inline-flex items-center gap-2 text-white/90 transition-colors duration-300 hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-white motion-reduce:transition-none">
+            <span className={`${syne.className} text-[14px] tracking-[-0.01em]`}>quiénes somos</span>
+          </Link>
+          <Suspense fallback={<span className={CLASE_FOLIO}>Exp.</span>}>
+            <FolioArchivo className={CLASE_FOLIO} />
+          </Suspense>
+        </div>
       </header>
 
       <section className="grid place-items-center text-center">

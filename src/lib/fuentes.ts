@@ -1,4 +1,4 @@
-import { Archivo_Black, Instrument_Serif, Permanent_Marker, Special_Elite } from "next/font/google";
+import { Archivo_Black, Instrument_Serif, Permanent_Marker, Special_Elite, Syne } from "next/font/google";
 
 export const archivoBlack = Archivo_Black({ weight: "400", subsets: ["latin"], display: "swap" });
 
@@ -12,6 +12,8 @@ export const instrumentSerif = Instrument_Serif({
 });
 
 export const permanentMarker = Permanent_Marker({ weight: "400", subsets: ["latin"], display: "swap" });
+
+export const syne = Syne({ weight: "700", subsets: ["latin"], display: "swap" });
 
 export const FUENTES_CICLO: readonly string[] = [
   specialElite.style.fontFamily,

@@ -13,8 +13,7 @@ const maquina = Courier_Prime({
   variable: "--font-maquina",
 });
 
-const siteTitle =
-  "drmrs archive · crewnecks numerados hechos a mano en Querétaro";
+const siteTitle = "drmrs archive";
 const siteDescription =
   "Crewnecks numerados y personalizados a mano en Querétaro. Regístrate gratis y entra 24 h antes a los drops de drmr.";
 

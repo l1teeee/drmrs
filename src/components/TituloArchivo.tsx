@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import Image from "next/image";
 
-import { archivoBlack, permanentMarker } from "@/lib/fuentes";
+import { archivoBlack, instrumentSerif } from "@/lib/fuentes";
 
 type TituloArchivoProps = {
   nombre: string;
@@ -38,7 +38,7 @@ export function TituloArchivo({ nombre, piezas, abierto }: TituloArchivoProps) {
               <path d="M46 10 C 34 4, 20 12, 6 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
               <path d="M6 12 L 12 8 M6 12 L 12 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            <span className={`${permanentMarker.className} whitespace-nowrap text-[13px] text-white/80`}>¿qué es?</span>
+            <span className={`${instrumentSerif.className} whitespace-nowrap italic text-[16px] text-white/80`}>¿qué es?</span>
           </span>
         </div>
         <h1 className={`${archivoBlack.className} text-[clamp(28px,3vw,44px)] leading-none tracking-[-0.03em]`}>
